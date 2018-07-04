@@ -1,0 +1,43 @@
+{
+  "name": "server2",
+  "version": "0.1.0",
+  "description": "Graphql server",
+  "main": "server.js",
+  "author": "Ron Dyck <rond@webbtech.net> (http://webbtech.net/)",
+  "license": "MIT",
+  "dependencies": {
+    "apollo-engine": "1.1.2",
+    "apollo-server": "2.0.0-beta.7",
+    "apollo-server-lambda": "2.0.0-rc.6",
+    "graphql": "0.13.2",
+    "graphql-tag": "2.9.2",
+    "graphql-type-json": "0.2.1",
+    "lodash": "4.17.10",
+    "ramda": "0.25.0",
+    "uuid": "3.2.1"
+  },
+  "devDependencies": {
+    "aws-sdk": "2.256.1",
+    "babel-cli": "6.26.0",
+    "babel-core": "6.26.3",
+    "babel-loader": "7.1.4",
+    "babel-preset-env": "1.7.0",
+    "babel-preset-stage-2": "6.24.1",
+    "eslint": "4.19.1",
+    "imports-loader": "0.8.0",
+    "nodemon": "1.17.5",
+    "webpack": "4.12.0",
+    "webpack-command": "0.2.1",
+    "webpack-node-externals": "1.7.2",
+    "webpack-shell-plugin": "0.5.0"
+  },
+  "scripts": {
+    "start": "NODE_ENV=development nodemon ./src/server --exec babel-node",
+    "dev": "NODE_ENV=development nodemon ./src/server.js",
+    "buildw": "NODE_ENV=production webpack",
+    "build": "babel src -d build"
+  },
+  "extra": {
+    "poststart": "webpack --watch --config webpack.config.js"
+  }
+}

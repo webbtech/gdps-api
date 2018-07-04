@@ -1,0 +1,80 @@
+#
+# ------------------------------ StationTanks -----------------------------
+#
+query StationTanks($StationID: String!) {
+  stationTanks(StationID: $StationID) {
+    ID
+    TankID
+  }
+}
+{
+  "StationID": "97dcfb38-f3c4-4045-8cc0-00f63064e49e"
+}
+
+#
+# ------------------------------ Stations ---------------------------------
+#
+query {
+  stations {
+    ID,
+    Name
+  }
+}
+
+#
+# ------------------------------ Tank -------------------------------------
+#
+query Tank($ID: String!) {
+  tank(ID: $ID) {
+    ID
+    Levels
+    Size
+  }
+}
+{
+  "ID": "19"
+}
+
+#
+# ------------------------------ Dips -------------------------------------
+#
+query Dips($Date: Int!, $StationID: String!) {
+  dips(Date: $Date, StationID: $StationID) {
+    FuelType
+    Litres
+    StationTankID
+    fuelDelivery {
+      Litres
+    }
+  }
+  fuelPrice(Date: $Date, StationID: $StationID) {
+    Price
+  }
+  dipOverShort(Date: $Date, StationID: $StationID) {
+    OverShort
+  }
+}
+query DipOS($Date: Int!, $StationID: String!) {
+  dipOverShort(Date: $Date, StationID: $StationID) {
+    OverShort
+  }
+}
+{
+  "StationID": "798210c1-4fe0-4ecc-ac18-2749336eaf9f",
+  "Date": 20180524
+}
+
+#
+# ------------------------------ Fuel Deliveries --------------------------
+#
+query FuelDeliveries($StationID: String!, $Date: Int) {
+  fuelDeliveries(StationID: $StationID, Date: $Date) {
+    FuelType
+    Litres
+    StationTankID
+  }
+}
+{
+  "StationID": "798210c1-4fe0-4ecc-ac18-2749336eaf9f",
+  "Date": 20180523
+}
