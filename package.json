@@ -1,5 +1,5 @@
 {
-  "name": "server2",
+  "name": "server",
   "version": "0.1.0",
   "description": "Graphql server",
   "main": "server.js",
@@ -13,6 +13,7 @@
     "graphql-tag": "2.9.2",
     "graphql-type-json": "0.2.1",
     "lodash": "4.17.10",
+    "moment": "2.22.2",
     "ramda": "0.25.0",
     "uuid": "3.2.1"
   },
@@ -25,6 +26,7 @@
     "babel-preset-stage-2": "6.24.1",
     "eslint": "4.19.1",
     "imports-loader": "0.8.0",
+    "jest": "23.4.0",
     "nodemon": "1.17.5",
     "webpack": "4.12.0",
     "webpack-command": "0.2.1",
@@ -35,7 +37,8 @@
     "start": "NODE_ENV=development nodemon ./src/server --exec babel-node",
     "dev": "NODE_ENV=development nodemon ./src/server.js",
     "buildw": "NODE_ENV=production webpack",
-    "build": "babel src -d build"
+    "build": "babel src -d build",
+    "test": "jest src"
   },
   "extra": {
     "poststart": "webpack --watch --config webpack.config.js"

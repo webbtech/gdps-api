@@ -8,3 +8,11 @@ export const promisify = foo =>
       }
     })
   })
+
+export const extractSales = sales => {
+  const ret = {}
+  for (const ft in sales) {
+    ret[ft] = parseFloat(sales[ft].N)
+  }
+  return ret
+}

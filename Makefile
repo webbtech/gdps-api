@@ -7,7 +7,8 @@ buildapp:
 	yarn run build && \
 	cp package.json build/ && \
 	cd ./build && \
-	yarn install --prod
+	yarn install --prod && \
+	find . -mtime +10950 -print -exec touch {} \;
 
 compileapp:
 	yarn run build
@@ -25,7 +26,7 @@ run-graph:
 package:
 	aws cloudformation package \
    --template-file template.yaml \
-   --output-template-file serverless-output.yaml \
+   --output-template-file packaged-template.yaml \
    --s3-bucket $(AWS_BUCKET_NAME) \
    --s3-prefix lambda \
    --profile $(AWS_PROFILE)
@@ -35,7 +36,7 @@ package:
 
 deploy:
 	aws cloudformation deploy \
-   --template-file serverless-output.yaml \
+   --template-file packaged-template.yaml \
    --stack-name $(AWS_STACK_NAME) \
    --capabilities CAPABILITY_IAM \
    --profile $(AWS_PROFILE)
