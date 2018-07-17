@@ -4,12 +4,13 @@ Transform: AWS::Serverless-2016-10-31
 Description: Dips Lambda App Functions
 
 Resources:
-  GraphQL:
+  GraphQLFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: server.graphqlHandler
       Runtime: nodejs8.10
       CodeUri: build/
+      Role: !GetAtt LambdaExecutionRole.Arn
       Events:
         GetRequest:
           Type: Api
@@ -21,6 +22,48 @@ Resources:
           Properties:
             Path: /
             Method: post
+        # OptionsRequest:
+        #   Type: Api
+        #   Properties:
+        #     Path: /
+        #     Method: options
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: root
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - dynamodb:DeleteItem
+            - dynamodb:DescribeStream
+            - dynamodb:GetItem
+            - dynamodb:GetRecords
+            - dynamodb:GetShardIterator
+            - dynamodb:ListStreams
+            - dynamodb:PutItem
+            - dynamodb:Query
+            - dynamodb:Scan
+            Resource: "arn:aws:dynamodb:ca-central-1:407205661819:table/GDS_*"
+            # Resource: "*"
+            # Resource: !GetAtt PDFTable.Arn
 
   # HelloWorldFunction:
   #   Type: AWS::Serverless::Function

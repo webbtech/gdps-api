@@ -17,33 +17,6 @@ export const typeDef = gql`
   }
 `
 
-const fetchTanks = (stationID, db) => {
-
-  const params = {
-    TableName: dt.STATION_TANK,
-    IndexName: 'StationIDIndex',
-    ExpressionAttributeValues: {
-      ':stId': {S: stationID},
-    },
-    KeyConditionExpression: 'StationID = :stId',
-    ProjectionExpression: 'ID, FuelType, TankID',
-  }
-
-  return promisify(callback =>
-    db.query(params, callback)
-  ).then(result => {
-    let res = []
-    result.Items.forEach(element => {
-      res.push({
-        id:       element.ID.S,
-        fuelType: element.FuelType.S,
-        tankID:   element.TankID.S,
-      })
-    })
-    return res
-  })
-}
-
 export const resolvers = {
   Query: {
     stationTanks: (_, { stationID }, { db }) => {
@@ -55,4 +28,30 @@ export const resolvers = {
       return fetchTank(tankID, db)
     },
   },
+}
+
+export const fetchTanks = (stationID, db) => {
+
+  const params = {
+    TableName: dt.STATION_TANK,
+    IndexName: 'StationIDIndex',
+    ExpressionAttributeValues: {
+      ':stId': {S: stationID},
+    },
+    KeyConditionExpression: 'StationID = :stId',
+    ProjectionExpression: 'ID, FuelType, TankID',
+  }
+
+  return db.query(params).promise().then(result => {
+    // console.log('result.ScannedCount for fetchTanks: ', result.ScannedCount)
+    let res = []
+    result.Items.forEach(element => {
+      res.push({
+        id:       element.ID.S,
+        fuelType: element.FuelType.S,
+        tankID:   element.TankID.S,
+      })
+    })
+    return res
+  })
 }

@@ -1,5 +1,5 @@
-import { ApolloServer, gql } from 'apollo-server-lambda'
-// import { ApolloServer, gql } from 'apollo-server'
+// import { ApolloServer, gql } from 'apollo-server-lambda'
+import { ApolloServer, gql } from 'apollo-server'
 import { merge } from 'lodash'
 
 import {
@@ -21,6 +21,31 @@ import {
   typeDef as FuelPrice,
   resolvers as fuelPriceResolvers,
 } from './modules/FuelPrice'
+
+import {
+  typeDef as FuelSale,
+  resolvers as fuelSaleResolvers,
+} from './modules/FuelSale'
+
+import {
+  typeDef as FuelSaleWeekly,
+  resolvers as fuelSaleWeeklyResolvers,
+} from './modules/FuelSaleWeekly'
+
+import {
+  typeDef as FuelSaleMonthly,
+  resolvers as fuelSaleMonthlyResolvers,
+} from './modules/FuelSaleMonthly'
+
+import {
+  typeDef as FuelSaleReport,
+  resolvers as fuelSaleReportResolvers,
+} from './modules/FuelSaleReport'
+
+import {
+  typeDef as FuelSaleReportAll,
+  resolvers as fuelSaleReportAllResolvers,
+} from './modules/FuelSaleReportAll'
 
 import {
   typeDef as PropaneDeliver,
@@ -56,16 +81,52 @@ const Query = gql`
 `
 
 const server = new ApolloServer({
-  typeDefs: [ Query, Dip, DipOverShort, FuelDeliver, FuelPrice, PropaneDeliver, Station, StationTank, Tank ],
-  resolvers: merge(dipResolvers, dipOverShortResolvers, fuelDeliverResolvers, fuelPriceResolvers, propaneDeliverResolvers, stationResolvers, stationTankResolvers, tankResolvers),
+  typeDefs: [
+    Query,
+    Dip,
+    DipOverShort,
+    FuelDeliver,
+    FuelPrice,
+    FuelSale,
+    FuelSaleMonthly,
+    FuelSaleReport,
+    FuelSaleReportAll,
+    FuelSaleWeekly,
+    PropaneDeliver,
+    Station,
+    StationTank,
+    Tank,
+  ],
+  resolvers: merge(
+    dipResolvers,
+    dipOverShortResolvers,
+    fuelDeliverResolvers,
+    fuelSaleResolvers,
+    fuelPriceResolvers,
+    fuelSaleMonthlyResolvers,
+    fuelSaleReportResolvers,
+    fuelSaleReportAllResolvers,
+    fuelSaleWeeklyResolvers,
+    propaneDeliverResolvers,
+    stationResolvers,
+    stationTankResolvers,
+    tankResolvers
+  ),
   context: async () => ({
     db: await new AWS.DynamoDB(),
   }),
 })
 
-exports.graphqlHandler = server.createHandler()
+// exports.graphqlHandler = server.createHandler()
 
-/*const server = new ApolloServer({ typeDefs, resolvers })
+/*exports.graphqlHandler = server.createHandler({
+  cors: {
+    origin: '*',
+    credentials: true,
+  },
+})*/
+
+// const server = new ApolloServer({ typeDefs, resolvers })
 server.listen().then(({ url }) => {
   console.log(`🚀 Server ready at ${url}`) // eslint-disable-line
-})*/
+})
