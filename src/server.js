@@ -28,24 +28,14 @@ import {
 } from './modules/FuelSale'
 
 import {
-  typeDef as FuelSaleWeekly,
-  resolvers as fuelSaleWeeklyResolvers,
-} from './modules/FuelSaleWeekly'
+  typeDef as FuelSaleDetailedReport,
+  resolvers as fuelSaleDetailedReportResolvers,
+} from './modules/FuelSaleDetailedReport'
 
 import {
-  typeDef as FuelSaleMonthly,
-  resolvers as fuelSaleMonthlyResolvers,
-} from './modules/FuelSaleMonthly'
-
-import {
-  typeDef as FuelSaleReport,
-  resolvers as fuelSaleReportResolvers,
-} from './modules/FuelSaleReport'
-
-import {
-  typeDef as FuelSaleReportAll,
-  resolvers as fuelSaleReportAllResolvers,
-} from './modules/FuelSaleReportAll'
+  typeDef as FuelSaleListReport,
+  resolvers as fuelSaleListReportResolvers,
+} from './modules/FuelSaleListReport'
 
 import {
   typeDef as PropaneDeliver,
@@ -88,10 +78,8 @@ const server = new ApolloServer({
     FuelDeliver,
     FuelPrice,
     FuelSale,
-    FuelSaleMonthly,
-    FuelSaleReport,
-    FuelSaleReportAll,
-    FuelSaleWeekly,
+    FuelSaleDetailedReport,
+    FuelSaleListReport,
     PropaneDeliver,
     Station,
     StationTank,
@@ -103,10 +91,8 @@ const server = new ApolloServer({
     fuelDeliverResolvers,
     fuelSaleResolvers,
     fuelPriceResolvers,
-    fuelSaleMonthlyResolvers,
-    fuelSaleReportResolvers,
-    fuelSaleReportAllResolvers,
-    fuelSaleWeeklyResolvers,
+    fuelSaleDetailedReportResolvers,
+    fuelSaleListReportResolvers,
     propaneDeliverResolvers,
     stationResolvers,
     stationTankResolvers,
@@ -117,13 +103,13 @@ const server = new ApolloServer({
   }),
 })
 
-// exports.graphqlHandler = server.createHandler()
-
 /*exports.graphqlHandler = server.createHandler({
   cors: {
     origin: '*',
     credentials: true,
   },
+  // allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Authorization', 'Access-Control-Allow-Origin'],
 })*/
 
 // const server = new ApolloServer({ typeDefs, resolvers })

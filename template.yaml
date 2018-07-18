@@ -12,16 +12,21 @@ Resources:
       CodeUri: build/
       Role: !GetAtt LambdaExecutionRole.Arn
       Events:
-        GetRequest:
+        AnyRequest:
           Type: Api
           Properties:
-            Path: /
-            Method: get
-        PostRequest:
-          Type: Api
-          Properties:
-            Path: /
-            Method: post
+            Path: /graphql
+            Method: ANY
+        # GetRequest:
+        #   Type: Api
+        #   Properties:
+        #     Path: /
+        #     Method: get
+        # PostRequest:
+        #   Type: Api
+        #   Properties:
+        #     Path: /
+        #     Method: post
         # OptionsRequest:
         #   Type: Api
         #   Properties:

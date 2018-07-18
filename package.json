@@ -7,8 +7,8 @@
   "license": "MIT",
   "dependencies": {
     "apollo-engine": "1.1.2",
-    "apollo-server": "2.0.0-beta.7",
-    "apollo-server-lambda": "1.4.0",
+    "apollo-server": "2.0.0-rc.8",
+    "apollo-server-lambda": "2.0.0-xrc.8",
     "graphql": "0.13.2",
     "graphql-tag": "2.9.2",
     "graphql-type-json": "0.2.1",

@@ -9,9 +9,9 @@ import { numberRange } from '../utils/utils'
 
 export const typeDef = gql`
   extend type Query {
-    fuelSaleReport(date: String!, stationID: String!): FuelSaleStationReport
+    fuelSaleDetailedReport(date: String!, stationID: String!): FuelSaleDetailedReport
   }
-  type FuelSaleStationReport {
+  type FuelSaleDetailedReport {
     fuelTypes: [String]
     stationID: String
     weekSales: [Week]
@@ -29,7 +29,7 @@ export const typeDef = gql`
 
 export const resolvers = {
   Query: {
-    fuelSaleReport: (_, { date, stationID }, { db }) => {
+    fuelSaleDetailedReport: (_, { date, stationID }, { db }) => {
       return fetchFuelSales(date, stationID, db)
     },
   },
