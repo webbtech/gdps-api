@@ -13,6 +13,16 @@ import {
 } from './modules/DipOverShort'
 
 import {
+  typeDef as DipOSMonthReport,
+  resolvers as dipOSMonthReportResolvers,
+} from './modules/DipOSMonthReport'
+
+import {
+  typeDef as DipOSAnnualReport,
+  resolvers as dipOSAnnualReportResolvers,
+} from './modules/DipOSAnnualReport'
+
+import {
   typeDef as FuelDeliver,
   resolvers as fuelDeliverResolvers,
 } from './modules/FuelDeliver'
@@ -74,6 +84,8 @@ const server = new ApolloServer({
   typeDefs: [
     Query,
     Dip,
+    DipOSAnnualReport,
+    DipOSMonthReport,
     DipOverShort,
     FuelDeliver,
     FuelPrice,
@@ -86,13 +98,15 @@ const server = new ApolloServer({
     Tank,
   ],
   resolvers: merge(
-    dipResolvers,
+    dipOSAnnualReportResolvers,
+    dipOSMonthReportResolvers,
     dipOverShortResolvers,
+    dipResolvers,
     fuelDeliverResolvers,
-    fuelSaleResolvers,
     fuelPriceResolvers,
     fuelSaleDetailedReportResolvers,
     fuelSaleListReportResolvers,
+    fuelSaleResolvers,
     propaneDeliverResolvers,
     stationResolvers,
     stationTankResolvers,

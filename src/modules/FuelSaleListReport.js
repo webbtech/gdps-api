@@ -15,6 +15,7 @@ export const typeDef = gql`
     periodHeader: JSON
     periodTotals: JSON
     sales: [StationSales]
+    totalsByFuel: JSON
   }
   type StationSales {
     fuelPrices: JSON,
@@ -52,7 +53,15 @@ const fetchFuelSalesAll = async (date, db) => {
   })
 
   const yrRange = numberRange(yearWeekStart, yearWeekEnd)
-  let periodTotals = setPeriodTotals(sales, yrRange)
+  const periodTotals = setPeriodTotals(sales, yrRange)
+  let totalsByFuel = {
+    NL: 0,
+    DSL: 0,
+  }
+  for (const period in periodTotals) {
+    totalsByFuel.NL += periodTotals[period].NL
+    totalsByFuel.DSL += periodTotals[period].DSL
+  }
   let periodHeader = {}
   yrRange.forEach(yr => {
     periodHeader[yr] = setDates(yr)
@@ -61,6 +70,7 @@ const fetchFuelSalesAll = async (date, db) => {
   return {
     periodHeader,
     periodTotals,
+    totalsByFuel,
     sales,
   }
 }
