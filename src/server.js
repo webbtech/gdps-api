@@ -1,5 +1,5 @@
-// import { ApolloServer, gql } from 'apollo-server-lambda'
-import { ApolloServer, gql } from 'apollo-server'
+import { ApolloServer, gql } from 'apollo-server-lambda'
+// import { ApolloServer, gql } from 'apollo-server'
 import { merge } from 'lodash'
 
 import {
@@ -28,6 +28,11 @@ import {
 } from './modules/FuelDeliver'
 
 import {
+  typeDef as FuelDeliveryReport,
+  resolvers as fuelDeliveryReportResolvers,
+} from './modules/FuelDeliveryReport'
+
+import {
   typeDef as FuelPrice,
   resolvers as fuelPriceResolvers,
 } from './modules/FuelPrice'
@@ -53,6 +58,16 @@ import {
 } from './modules/PropaneDeliver'
 
 import {
+  typeDef as PropaneSaleAnnualReport,
+  resolvers as propaneSaleAnnualReportResolvers,
+} from './modules/PropaneSaleAnnualReport'
+
+import {
+  typeDef as PropaneSaleMonthReport,
+  resolvers as propaneSaleMonthReportResolvers,
+} from './modules/PropaneSaleMonthReport'
+
+import {
   typeDef as Station,
   resolvers as stationResolvers,
 } from './modules/Station'
@@ -74,11 +89,24 @@ import { config } from './config/dynamo'
 AWS.config.update(config)
 
 // Construct a schema, using GraphQL schema language
-const Query = gql`
+/*const Query = gql`
   type Query {
     _empty: String
   }
+`*/
+
+const Query = gql`
+  type Query {
+    hello: String
+  }
 `
+
+// Provide resolver functions for your schema fields
+const helloResolvers = {
+  Query: {
+    hello: () => 'Hello world!',
+  },
+}
 
 const server = new ApolloServer({
   typeDefs: [
@@ -88,26 +116,33 @@ const server = new ApolloServer({
     DipOSMonthReport,
     DipOverShort,
     FuelDeliver,
+    FuelDeliveryReport,
     FuelPrice,
     FuelSale,
     FuelSaleDetailedReport,
     FuelSaleListReport,
     PropaneDeliver,
+    PropaneSaleAnnualReport,
+    PropaneSaleMonthReport,
     Station,
     StationTank,
     Tank,
   ],
   resolvers: merge(
+    helloResolvers,
     dipOSAnnualReportResolvers,
     dipOSMonthReportResolvers,
     dipOverShortResolvers,
     dipResolvers,
     fuelDeliverResolvers,
+    fuelDeliveryReportResolvers,
     fuelPriceResolvers,
     fuelSaleDetailedReportResolvers,
     fuelSaleListReportResolvers,
     fuelSaleResolvers,
     propaneDeliverResolvers,
+    propaneSaleAnnualReportResolvers,
+    propaneSaleMonthReportResolvers,
     stationResolvers,
     stationTankResolvers,
     tankResolvers
@@ -117,16 +152,15 @@ const server = new ApolloServer({
   }),
 })
 
-/*exports.graphqlHandler = server.createHandler({
+exports.graphqlHandler = server.createHandler({
   cors: {
     origin: '*',
+    // methods: '*',
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Origin'],
   },
-  // allowedHeaders: ['Content-Type', 'Authorization'],
-  allowedHeaders: ['Authorization', 'Access-Control-Allow-Origin'],
-})*/
-
-// const server = new ApolloServer({ typeDefs, resolvers })
-server.listen().then(({ url }) => {
-  console.log(`🚀 Server ready at ${url}`) // eslint-disable-line
 })
+
+/*server.listen().then(({ url }) => {
+  console.log(`🚀 Server ready at ${url}`) // eslint-disable-line
+})*/

@@ -1,11 +1,12 @@
 import { gql } from 'apollo-server'
 
 import { dynamoTables as dt } from '../config/constants'
+import moment from 'moment'
 import { promisify } from '../utils/dynamoUtils'
 
 export const typeDef = gql`
   extend type Query {
-    fuelDeliveries(date: Int, stationID: String): [FuelDeliver!]
+    fuelDeliveries(date: String!, stationID: String!): [FuelDeliver!]
   }
   type FuelDeliver {
     date: Int
@@ -25,6 +26,8 @@ export const resolvers = {
 
 export const fetchDeliveries = (date, stationID, db) => {
 
+  const dte = moment(date).format('YYYYMMDD')
+
   const params = {
     TableName: dt.FUEL_DELIVER,
     IndexName: 'StationIDIndex',
@@ -34,20 +37,20 @@ export const fetchDeliveries = (date, stationID, db) => {
     },
     ExpressionAttributeValues: {
       ':stId':  {S: stationID},
-      ':dte':   {N: date.toString()},
+      ':dte':   {N: dte},
     },
     ProjectionExpression: '#dte, FuelType, Litres, StationTankID',
   }
 
-  return promisify(callback =>
-    db.query(params, callback)
-  ).then(result => {
+  return db.query(params).promise().then(result => {
     let res = []
-    result.Items.forEach(element => {
+    result.Items.forEach(ele => {
+      console.log('ele: ', ele)
       res.push({
-        fuelType:       element.FuelType.S,
-        litres:         element.Litres.N,
-        stationTankID:  element.StationTankID.S,
+        date:           ele.Date.N,
+        fuelType:       ele.FuelType.S,
+        litres:         ele.Litres.N,
+        stationTankID:  ele.StationTankID.S,
       })
     })
     return res

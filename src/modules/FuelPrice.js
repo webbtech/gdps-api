@@ -50,15 +50,14 @@ export const fetchPrice = (date, stationID, db) => {
       Date: {N: date.toString()},
       StationID: {S: stationID},
     },
-    AttributesToGet: [
-      'Price, StationID, YearWeek',
-    ],
+    ProjectionExpression: 'Price, YearWeek',
   }
 
   return db.getItem(params).promise().then(result => {
     if (undefined === result.Item) return null
     return {
       price: result.Item.Price.N,
+      yearWeek: result.Item.YearWeek.N,
     }
   })
 }

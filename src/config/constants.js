@@ -15,3 +15,5 @@ export const dynamoTables = {
   STATION_TANK:     `${prefix}StationTank`,
   TANK:             `${prefix}Tank`,
 }
+
+export const propaneTankIDs = [475, 476]

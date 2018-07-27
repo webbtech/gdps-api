@@ -49,9 +49,14 @@ const fetchFuelSalesAll = async (date, db) => {
 
   await asyncForEach(stations, async station => {
     const stSales = await fetchStationFuelSales(yearWeekStart, yearWeekEnd, station, db)
-    sales.push(stSales)
+    if (stSales) {
+      sales.push(stSales)
+    }
   })
 
+  if (!sales.length) {
+    return null
+  }
   const yrRange = numberRange(yearWeekStart, yearWeekEnd)
   const periodTotals = setPeriodTotals(sales, yrRange)
   let totalsByFuel = {

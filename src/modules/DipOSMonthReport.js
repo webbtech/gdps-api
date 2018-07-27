@@ -75,8 +75,6 @@ export const fetchDipOSMonth = async (date, stationID, db) => {
       })
     })
 
-  // (accum, val) => accum + parseFloat(val.OverShort.M[ft].M.overshort.N), 0.00
-    // console.log('res.overshort: ', res.overShort[0])
     let summary = {}
     fuelTypes.forEach(ft => {
       summary[ft] = res.overShort.reduce(
@@ -85,7 +83,6 @@ export const fetchDipOSMonth = async (date, stationID, db) => {
     })
 
     res.overShortSummary = summary
-    // console.log('summary: ', summary)
 
     return res
   })
