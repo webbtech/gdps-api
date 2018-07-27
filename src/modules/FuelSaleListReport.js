@@ -4,18 +4,21 @@ import moment from 'moment'
 
 import { asyncForEach, numberRange } from '../utils/utils'
 import { dynamoTables as dt } from '../config/constants'
+import { fetchFuelPriceWeekAvgRange } from './FuelPrice'
 import { fetchStations } from './Station'
 
 export const typeDef = gql`
   extend type Query {
-    fuelSaleReportAll(date: String!): FuelSaleReport
+    fuelSaleListReport(date: String!): FuelSaleListReport
   }
-  type FuelSaleReport {
+  type FuelSaleListReport {
     periodHeader: JSON
     periodTotals: JSON
     sales: [StationSales]
+    totalsByFuel: JSON
   }
   type StationSales {
+    fuelPrices: JSON,
     periods: JSON,
     stationID: String,
     stationName: String
@@ -25,7 +28,7 @@ export const typeDef = gql`
 
 export const resolvers = {
   Query: {
-    fuelSaleReportAll: (_, { date }, { db }) => {
+    fuelSaleListReport: (_, { date }, { db }) => {
       return fetchFuelSalesAll(date, db)
     },
   },
@@ -43,12 +46,27 @@ const fetchFuelSalesAll = async (date, db) => {
   const stations = await fetchStations(null, db)
 
   let sales = []
+
   await asyncForEach(stations, async station => {
     const stSales = await fetchStationFuelSales(yearWeekStart, yearWeekEnd, station, db)
-    sales.push(stSales)
+    if (stSales) {
+      sales.push(stSales)
+    }
   })
+
+  if (!sales.length) {
+    return null
+  }
   const yrRange = numberRange(yearWeekStart, yearWeekEnd)
-  let periodTotals = setPeriodTotals(sales, yrRange)
+  const periodTotals = setPeriodTotals(sales, yrRange)
+  let totalsByFuel = {
+    NL: 0,
+    DSL: 0,
+  }
+  for (const period in periodTotals) {
+    totalsByFuel.NL += periodTotals[period].NL
+    totalsByFuel.DSL += periodTotals[period].DSL
+  }
   let periodHeader = {}
   yrRange.forEach(yr => {
     periodHeader[yr] = setDates(yr)
@@ -57,6 +75,7 @@ const fetchFuelSalesAll = async (date, db) => {
   return {
     periodHeader,
     periodTotals,
+    totalsByFuel,
     sales,
   }
 }
@@ -79,10 +98,10 @@ const fetchStationFuelSales = async (yearWeekStart, yearWeekEnd, station, db) =>
   }
 
   const yrRange = numberRange(yearWeekStart, yearWeekEnd)
+  const fuelPrices = await fetchFuelPriceWeekAvgRange(yearWeekStart, yearWeekEnd, station.id, db)
 
   let docs = {}
   yrRange.forEach(yr => docs[yr] = [])
-
 
   return await db.query(params).promise().then(result => {
     if (!result.Items.length) return null
@@ -97,6 +116,7 @@ const fetchStationFuelSales = async (yearWeekStart, yearWeekEnd, station, db) =>
     })
 
     let res = {
+      fuelPrices,
       periods: {},
       stationID:    station.id,
       stationName:  station.name,

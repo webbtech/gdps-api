@@ -1,6 +1,8 @@
 include .env
 
-default: buildapp package deploy
+default: compileapp package deploy
+
+fulldeploy: buildapp package deploy
 
 buildapp:
 	rm -fr build/* && \
