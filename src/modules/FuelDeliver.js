@@ -2,18 +2,27 @@ import { gql } from 'apollo-server'
 
 import { dynamoTables as dt } from '../config/constants'
 import moment from 'moment'
-import { promisify } from '../utils/dynamoUtils'
 
 export const typeDef = gql`
-  extend type Query {
-    fuelDeliveries(date: String!, stationID: String!): [FuelDeliver!]
-  }
-  type FuelDeliver {
-    date: Int
-    fuelType: String
-    litres: Int
-    stationTankID: String
-  }
+extend type Mutation {
+  createDelivery(input: DeliveryInput): InsertResult
+}
+extend type Query {
+  fuelDeliveries(date: Int!, stationID: String!): [FuelDeliver!]
+}
+type FuelDeliver {
+  date: Int
+  fuelType: String
+  litres: Int
+  stationTankID: String
+}
+input DeliveryInput {
+  date: Int!
+  fuelType: String!
+  litres: Int!
+  stationID: String!
+  stationTankID: String!
+}
 `
 
 export const resolvers = {
@@ -22,12 +31,16 @@ export const resolvers = {
       return fetchDeliveries(date, stationID, db)
     },
   },
+  Mutation: {
+    createDelivery: (_, { input }, { db }) => {
+      return persistDelivery(input, db)
+    },
+  },
 }
 
 export const fetchDeliveries = (date, stationID, db) => {
 
-  const dte = moment(date).format('YYYYMMDD')
-
+  const dte = moment(date.toString()).format('YYYYMMDD')
   const params = {
     TableName: dt.FUEL_DELIVER,
     IndexName: 'StationIDIndex',
@@ -45,7 +58,6 @@ export const fetchDeliveries = (date, stationID, db) => {
   return db.query(params).promise().then(result => {
     let res = []
     result.Items.forEach(ele => {
-      console.log('ele: ', ele)
       res.push({
         date:           ele.Date.N,
         fuelType:       ele.FuelType.S,
@@ -61,7 +73,6 @@ export const fetchDelivery = (date, stationTankID, db) => {
 
   const params = {
     TableName: dt.FUEL_DELIVER,
-    IndexName: 'StationTankIDIndex',
     KeyConditionExpression: 'StationTankID = :stId and #dte = :dte',
     ExpressionAttributeNames: {
       '#dte': 'Date',
@@ -73,9 +84,7 @@ export const fetchDelivery = (date, stationTankID, db) => {
     ProjectionExpression: '#dte, FuelType, Litres, StationTankID',
   }
 
-  return promisify(callback =>
-    db.query(params, callback)
-  ).then(result => {
+  return db.query(params).promise().then(result => {
     const item = result.Items[0]
     if (!item) return
     return {
@@ -84,4 +93,44 @@ export const fetchDelivery = (date, stationTankID, db) => {
       stationTankID:  item.StationTankID.S,
     }
   })
+}
+
+export const persistDelivery = async (input, db) => {
+
+  const params = {
+    TableName: dt.FUEL_DELIVER,
+    Item: {
+      Date:           {N: input.date.toString()},
+      FuelType:       {S: input.fuelType},
+      Litres:         {N: input.litres.toString()},
+      StationID:      {S: input.stationID},
+      StationTankID:  {S: input.stationTankID},
+    },
+  }
+
+  try {
+    await db.putItem(params).promise()
+  } catch (err) {
+    console.log('Error: ', err) // eslint-disable-line
+  }
+
+  return {
+    ok: 1,
+    nModified: 1,
+  }
+}
+
+export const removeDelivery = async (input, db) => {
+  const params = {
+    TableName: dt.FUEL_DELIVER,
+    Key: {
+      'Date':         {N: input.date.toString()},
+      StationTankID:  {S: input.stationTankID},
+    }}
+
+  try {
+    await db.deleteItem(params).promise()
+  } catch (err) {
+    console.log('Error: ', err) // eslint-disable-line
+  }
 }

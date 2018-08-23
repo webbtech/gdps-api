@@ -11,6 +11,7 @@ export const typeDef = gql`
     fuelPriceWeekAvgRange(yearWeekStart: Int!, yearWeekEnd: Int!, stationID: String!): FuelAverageRange
   }
   type FuelPrice {
+    date: Int
     price: Float
     stationID: String
     yearWeek: Int
@@ -46,18 +47,23 @@ export const fetchPrice = (date, stationID, db) => {
 
   const params = {
     TableName: dt.FUEL_PRICE,
+    ExpressionAttributeNames: {
+      '#dte': 'Date',
+    },
     Key: {
       Date: {N: date.toString()},
       StationID: {S: stationID},
     },
-    ProjectionExpression: 'Price, YearWeek',
+    ProjectionExpression: '#dte, Price, StationID, YearWeek',
   }
 
   return db.getItem(params).promise().then(result => {
     if (undefined === result.Item) return null
     return {
-      price: result.Item.Price.N,
-      yearWeek: result.Item.YearWeek.N,
+      date:       result.Item.Date.N,
+      price:      result.Item.Price.N,
+      stationID:  result.Item.StationID.S,
+      yearWeek:   result.Item.YearWeek.N,
     }
   })
 }

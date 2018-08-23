@@ -11,6 +11,7 @@ Resources:
       Runtime: nodejs8.10
       CodeUri: build/
       Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 20
       Events:
         AnyRequest:
           Type: Api

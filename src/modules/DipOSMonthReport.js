@@ -93,10 +93,10 @@ const extractOS = (os) => {
   for (const ft in os) {
     const map = os[ft].M
     ret[ft] = {
-      litres: Number(map.litres.N),
-      sale: parseFloat(map.sale.N),
-      overShort: parseFloat(map.overshort.N),
-      fuelType: map.fuel_type.S,
+      tankLitres: Number(map.TankLitres.N),
+      litresSold: parseFloat(map.LitresSold.N),
+      overShort: parseFloat(map.OverShort.N),
+      fuelType: map.FuelType.S,
     }
   }
   return ret

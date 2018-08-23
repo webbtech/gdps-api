@@ -7,6 +7,7 @@ fulldeploy: buildapp package deploy
 buildapp:
 	rm -fr build/* && \
 	yarn run build && \
+	cp ./src/auth/jwk.json build/auth/ && \
 	cp package.json build/ && \
 	cd ./build && \
 	yarn install --prod && \

@@ -81,7 +81,7 @@ export const fetchDipOSAnnual = async (date, stationID, db) => {
       accumRes[m] = {}
       fuelTypes.forEach(ft => {
         accumRes[m][ft] = monthRes[m].reduce(
-          (accum, val) => accum + parseFloat(val.OverShort.M[ft].M.overshort.N), 0.00
+          (accum, val) => accum + parseFloat(val.OverShort.M[ft].M.OverShort.N), 0.00
         )
       })
     })
@@ -90,7 +90,7 @@ export const fetchDipOSAnnual = async (date, stationID, db) => {
     let summary = {}
     fuelTypes.forEach(ft => {
       summary[ft] = result.Items.reduce(
-        (accum, val) => accum + parseFloat(val.OverShort.M[ft].M.overshort.N), 0.00
+        (accum, val) => accum + parseFloat(val.OverShort.M[ft].M.OverShort.N), 0.00
       )
     })
 

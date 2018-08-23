@@ -7,14 +7,21 @@
   "license": "MIT",
   "dependencies": {
     "apollo-engine": "1.1.2",
+    "apollo-errors": "1.9.0",
     "apollo-server": "2.0.0",
     "apollo-server-lambda": "2.0.0-xrc.11",
+    "fs": "0.0.1-security",
     "graphql": "0.13.2",
     "graphql-tag": "2.9.2",
     "graphql-type-json": "0.2.1",
+    "jsonwebtoken": "8.3.0",
+    "jwk-to-pem": "2.0.0",
     "lodash": "4.17.10",
     "moment": "2.22.2",
+    "path": "0.12.7",
     "ramda": "0.25.0",
+    "request": "2.88.0",
+    "request-promise-native": "1.0.5",
     "uuid": "3.2.1"
   },
   "devDependencies": {

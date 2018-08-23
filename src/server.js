@@ -1,6 +1,9 @@
-import { ApolloServer, gql } from 'apollo-server-lambda'
-// import { ApolloServer, gql } from 'apollo-server'
+// import { ApolloServer, gql } from 'apollo-server-lambda'
+import { ApolloServer, gql } from 'apollo-server'
+import { createError } from'apollo-errors'
 import { merge } from 'lodash'
+
+import authCheck from './auth/authCheck'
 
 import {
   typeDef as Dip,
@@ -53,6 +56,11 @@ import {
 } from './modules/FuelSaleListReport'
 
 import {
+  typeDef as ImportData,
+  resolvers as importDataResolvers,
+} from './modules/ImportData'
+
+import {
   typeDef as PropaneDeliver,
   resolvers as propaneDeliverResolvers,
 } from './modules/PropaneDeliver'
@@ -88,6 +96,10 @@ import { config } from './config/dynamo'
 
 AWS.config.update(config)
 
+const AuthorizationError = createError('AuthorizationError', {
+  message: 'You are not authorized!',
+})
+
 // Construct a schema, using GraphQL schema language
 /*const Query = gql`
   type Query {
@@ -101,7 +113,13 @@ const Query = gql`
   }
 `
 
-// Provide resolver functions for your schema fields
+const Mutation = gql`
+  type Mutation {
+    _empty: String
+  }
+`
+
+// Used primarily as a heartbeat
 const helloResolvers = {
   Query: {
     hello: () => 'Hello world!',
@@ -111,6 +129,7 @@ const helloResolvers = {
 const server = new ApolloServer({
   typeDefs: [
     Query,
+    Mutation,
     Dip,
     DipOSAnnualReport,
     DipOSMonthReport,
@@ -121,6 +140,7 @@ const server = new ApolloServer({
     FuelSale,
     FuelSaleDetailedReport,
     FuelSaleListReport,
+    ImportData,
     PropaneDeliver,
     PropaneSaleAnnualReport,
     PropaneSaleMonthReport,
@@ -140,6 +160,7 @@ const server = new ApolloServer({
     fuelSaleDetailedReportResolvers,
     fuelSaleListReportResolvers,
     fuelSaleResolvers,
+    importDataResolvers,
     propaneDeliverResolvers,
     propaneSaleAnnualReportResolvers,
     propaneSaleMonthReportResolvers,
@@ -147,20 +168,54 @@ const server = new ApolloServer({
     stationTankResolvers,
     tankResolvers
   ),
+  /*context: async ({ event }) => {
+    const db = await new AWS.DynamoDB()
+    let user
+    try {
+      user = await authCheck(event.headers.Authorization)
+    } catch (err) {
+      console.error(err) // eslint-disable-line
+      throw new AuthorizationError()
+    }
+    return {
+      db,
+      user,
+    }
+  },*/
+  // Local development without authentication
   context: async () => ({
     db: await new AWS.DynamoDB(),
   }),
+  // Local development with authentication headers
+  /*context: async ({ req }) => {
+    // console.log('req.headers.authorization: ', req.headers.authorization)
+    // console.log('req.headers: ', req.headers)
+    let user
+    try {
+      user = await authCheck(req.headers.authorization)
+    } catch (err) {
+      console.error(err) // eslint-disable-line
+      throw new AuthorizationError()
+    }
+    // console.log('user: ', user)
+    return {
+      db: await new AWS.DynamoDB(),
+      user,
+    }
+  },*/
 })
 
-exports.graphqlHandler = server.createHandler({
+// console.log('process.env: ', process.env.NODE_ENV)
+
+/*exports.graphqlHandler = server.createHandler({
   cors: {
     origin: '*',
     // methods: '*',
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Origin'],
   },
-})
-
-/*server.listen().then(({ url }) => {
-  console.log(`🚀 Server ready at ${url}`) // eslint-disable-line
 })*/
+
+server.listen().then(({ url }) => {
+  console.log(`🚀 Server ready at ${url}`) // eslint-disable-line
+})

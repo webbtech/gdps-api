@@ -1,8 +1,6 @@
 import { gql } from 'apollo-server'
 
 import { dynamoTables as dt } from '../config/constants'
-import { promisify } from '../utils/dynamoUtils'
-
 import { fetchTank } from './Tank'
 
 export const typeDef = gql`
