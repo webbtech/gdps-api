@@ -66,6 +66,7 @@ Resources:
             - dynamodb:GetShardIterator
             - dynamodb:ListStreams
             - dynamodb:PutItem
+            - dynamodb:UpdateItem
             - dynamodb:Query
             - dynamodb:Scan
             Resource: "arn:aws:dynamodb:ca-central-1:407205661819:table/GDS_*"

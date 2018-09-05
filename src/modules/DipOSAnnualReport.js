@@ -4,7 +4,7 @@ import { gql } from 'apollo-server'
 import { uniq } from 'lodash'
 
 import { dynamoTables as dt } from '../config/constants'
-import { fetchTanks } from './StationTank'
+import { fetchStationTanks } from './StationTank'
 
 export const typeDef = gql`
   extend type Query {
@@ -33,7 +33,7 @@ export const fetchDipOSAnnual = async (date, stationID, db) => {
   const dte = moment(date)
   const year = Number(dte.year())
 
-  const tanks = await fetchTanks(stationID, db)
+  const tanks = await fetchStationTanks(stationID, db)
   const fuelTypes = uniq(tanks.map(t => t.fuelType))
 
   let res = {
@@ -112,3 +112,4 @@ const setMonths = year => {
   }
   return months
 }
+

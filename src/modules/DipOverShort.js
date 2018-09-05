@@ -134,6 +134,7 @@ export const persistDipOS = async ( { date, stationID }, db) => {
     await db.putItem(params).promise()
   } catch (err) {
     console.log('Error: ', err) // eslint-disable-line
+    return err
   }
 
   return {
@@ -191,11 +192,15 @@ const subDeliveries = (dips, deliveries) => {
   return dips
 }
 
+// The rule here says that if there was not a previous dip value (litres)
+// then that fuelType OS does not get created
 const subPrevDips = (prevDips, curDips) => {
   let netDips = {}
   const fuelTypes = Object.keys(prevDips)
   fuelTypes.forEach(ft => {
-    netDips[ft] = prevDips[ft] - curDips[ft]
+    if (prevDips[ft]) { // skip any zero values
+      netDips[ft] = prevDips[ft] - curDips[ft]
+    }
   })
   return netDips
 }

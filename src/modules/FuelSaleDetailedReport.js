@@ -4,7 +4,7 @@ import { gql } from 'apollo-server'
 import { sortBy, uniq } from 'lodash'
 
 import { dynamoTables as dt } from '../config/constants'
-import { fetchTanks } from './StationTank'
+import { fetchStationTanks } from './StationTank'
 import { numberRange } from '../utils/utils'
 
 export const typeDef = gql`
@@ -47,7 +47,7 @@ export const fetchFuelSales = async (date, stationID, db) => {
 
   let yrRange = numberRange(startWk, endWk).map(wk => `${year}${wk}`)
 
-  const tanks = await fetchTanks(stationID, db)
+  const tanks = await fetchStationTanks(stationID, db)
   const fuelTypes = uniq(tanks.map(t => t.fuelType))
 
   // Initialize temp var for processing later

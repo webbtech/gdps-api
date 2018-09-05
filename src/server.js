@@ -168,8 +168,11 @@ const server = new ApolloServer({
     stationTankResolvers,
     tankResolvers
   ),
+
+  // Live server setup
   /*context: async ({ event }) => {
     const db = await new AWS.DynamoDB()
+    const docClient = await new AWS.DynamoDB.DocumentClient()
     let user
     try {
       user = await authCheck(event.headers.Authorization)
@@ -179,17 +182,19 @@ const server = new ApolloServer({
     }
     return {
       db,
+      docClient,
       user,
     }
   },*/
+
   // Local development without authentication
-  context: async () => ({
+  /*context: async () => ({
     db: await new AWS.DynamoDB(),
-  }),
+    docClient: await new AWS.DynamoDB.DocumentClient(),
+  }),*/
+
   // Local development with authentication headers
-  /*context: async ({ req }) => {
-    // console.log('req.headers.authorization: ', req.headers.authorization)
-    // console.log('req.headers: ', req.headers)
+  context: async ({ req }) => {
     let user
     try {
       user = await authCheck(req.headers.authorization)
@@ -197,12 +202,11 @@ const server = new ApolloServer({
       console.error(err) // eslint-disable-line
       throw new AuthorizationError()
     }
-    // console.log('user: ', user)
     return {
       db: await new AWS.DynamoDB(),
       user,
     }
-  },*/
+  },
 })
 
 // console.log('process.env: ', process.env.NODE_ENV)

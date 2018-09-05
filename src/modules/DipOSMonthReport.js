@@ -4,7 +4,7 @@ import { gql } from 'apollo-server'
 import { uniq } from 'lodash'
 
 import { dynamoTables as dt } from '../config/constants'
-import { fetchTanks } from './StationTank'
+import { fetchStationTanks } from './StationTank'
 
 
 export const typeDef = gql`
@@ -39,7 +39,7 @@ export const fetchDipOSMonth = async (date, stationID, db) => {
   const startDay = dte.startOf('month').format('YYYYMMDD')
   const endDay = dte.endOf('month').format('YYYYMMDD')
 
-  const tanks = await fetchTanks(stationID, db)
+  const tanks = await fetchStationTanks(stationID, db)
   const fuelTypes = uniq(tanks.map(t => t.fuelType))
 
   let res = {

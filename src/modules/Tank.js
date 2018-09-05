@@ -2,13 +2,13 @@ import { gql } from 'apollo-server'
 import GraphQLJSON from 'graphql-type-json'
 
 import { dynamoTables as dt } from '../config/constants'
-import { promisify } from '../utils/dynamoUtils'
 
 export const typeDef = gql`
 
   scalar JSON
   extend type Query {
     tank(id: String!): Tank
+    tankList: [Tank]
   }
   type Tank {
     id: String
@@ -25,6 +25,9 @@ export const resolvers = {
     tank: (_, { id }, { db }) => {
       return fetchTank(id, db)
     },
+    tankList: (_, vars, { db }) => {
+      return fetchTankList(db)
+    },
   },
   JSON: GraphQLJSON,
 }
@@ -37,23 +40,47 @@ export const fetchTank = (id, db) => {
     },
     ProjectionExpression: 'ID, Levels, Size',
   }
-  return promisify(callback =>
-    db.getItem(params, callback)
-  ).then(result => {
 
-    let l = {}
-    const levels = result.Item.Levels.M
-    for (let m in levels) {
-      const level = levels[m].M
-      l[m] = {
-        litres: parseInt(level.litres.N, 10),
-        level:  parseInt(level.level.N, 10),
-      }
-    }
+  return db.getItem(params).promise().then(result => {
+
     return {
       id:     result.Item.ID.S,
-      levels: l,
+      levels: extractLevels(result.Item.Levels.M),
       size:   result.Item.Size.N,
     }
   })
+}
+
+export const fetchTankList = (db) => {
+
+  const params = {
+    AttributesToGet: ['ID', 'Levels', 'Size'],
+    TableName: dt.TANK,
+  }
+
+  return db.scan(params).promise().then(result => {
+
+    let res = []
+    result.Items.forEach(ele => {
+      extractLevels(ele.Levels.M)
+      res.push({
+        id:     ele.ID.S,
+        levels: extractLevels(ele.Levels.M),
+        size:   ele.Size.N,
+      })
+    })
+    return res
+  })
+}
+
+const extractLevels = levels => {
+  let l = {}
+  for (let m in levels) {
+    const level = levels[m].M
+    l[m] = {
+      litres: Number(level.litres.N),
+      level:  Number(level.level.N),
+    }
+  }
+  return l
 }
