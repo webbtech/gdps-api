@@ -12,6 +12,7 @@ Resources:
       CodeUri: build/
       Role: !GetAtt LambdaExecutionRole.Arn
       Timeout: 20
+      MemorySize: 384
       Events:
         AnyRequest:
           Type: Api
