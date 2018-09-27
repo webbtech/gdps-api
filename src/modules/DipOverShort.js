@@ -1,4 +1,4 @@
-import { gql } from 'apollo-server'
+import { gql, ApolloError } from 'apollo-server'
 import GraphQLJSON from 'graphql-type-json'
 import moment from 'moment'
 import { uniq } from 'lodash'
@@ -111,6 +111,11 @@ export const persistDipOS = async ( { date, stationID }, db) => {
   const dips          = await fetchDipsRange(dateFrom, dateTo, stationID, db)
   const deliveries    = await fetchDeliveries(dateTo, stationID, db)
   const fuelSalesRes  = await fetchFuelSale(dateTo, stationID, db)
+  // We're trapping this error because the dip won't calculate without, and
+  // it's likely data hasn't been imported yet
+  if (!fuelSalesRes) {
+    throw new ApolloError('Missing fuel sale in persistDipOS')
+  }
 
   const prevDips    = aggregateDips(dips, dateFrom)
   const curDips     = aggregateDips(dips, dateTo)
@@ -118,6 +123,7 @@ export const persistDipOS = async ( { date, stationID }, db) => {
   const netDips     = subPrevDips(prevDips, curNetDips)
   const fuelSales   = extractFS(fuelSalesRes)
   const dipOSs      = dipOverShorts(netDips, fuelSales)
+
 
   const params = {
     TableName: dt.DIP_OVERSHORT,

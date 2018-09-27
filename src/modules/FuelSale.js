@@ -18,6 +18,7 @@ extend type Mutation {
 }
 extend type Query {
   fuelSale(date: String!, stationID: String!): FuelSale,
+  fuelSaleLatest(stationID: String!): FuelSale,
   fuelSaleMonth(date: String!, stationID: String!): FuelSalesMonth,
   fuelSaleRange(dateFrom: String!, dateTo: String!, stationID: String!): [FuelSale]
 }
@@ -60,13 +61,17 @@ export const resolvers = {
       const dteTo = moment(dateTo).format('YYYYMMDD')
       return fetchFuelSaleRange(dteFrom, dteTo, stationID, db)
     },
+    fuelSaleLatest: (_, { stationID }, { docClient }) => {
+      return fetchFuelSaleLatest(stationID, docClient)
+    },
+
   },
   JSON: GraphQLJSON,
 }
 
 export const fetchFuelSale = (date, stationID, db) => {
 
-  const dte = moment(date).format('YYYYMMDD')
+  const dte = moment(date.toString()).format('YYYYMMDD')
   const params = {
     TableName: dt.FUEL_SALE,
     Key: {
@@ -158,8 +163,39 @@ const createFuelSaleDwnld = (date, stationID, user) => {
       stationID,
     }
   })
-
 }
+
+const fetchFuelSaleLatest = async (stationID, docClient) => {
+
+  const params = {
+    ExpressionAttributeValues: {
+      ':station': stationID,
+    },
+    KeyConditionExpression: 'StationID = :station',
+    TableName: dt.FUEL_SALE,
+    Limit: 1,
+    ScanIndexForward: false,
+  }
+
+  let res
+  try {
+    res = await docClient.query(params).promise()
+  } catch (err) {
+    console.log('Error: ', err) // eslint-disable-line
+    return err
+  }
+
+  const item = res.Items[0]
+  return {
+    date: item.Date,
+    sales: item.Sales,
+    stationID: item.StationID,
+  }
+}
+
+//
+// ======================== Helper Functions ================================ //
+//
 
 const extractSales = (sales, fuelTypes) => {
   const ret = {}

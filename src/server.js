@@ -76,6 +76,11 @@ import {
 } from './modules/PropaneSaleMonthReport'
 
 import {
+  typeDef as PropaneReportDwnld,
+  resolvers as propaneReportDwnldResolvers,
+} from './modules/PropaneReportDwnld'
+
+import {
   typeDef as Station,
   resolvers as stationResolvers,
 } from './modules/Station'
@@ -142,6 +147,7 @@ const server = new ApolloServer({
     FuelSaleListReport,
     ImportData,
     PropaneDeliver,
+    PropaneReportDwnld,
     PropaneSaleAnnualReport,
     PropaneSaleMonthReport,
     Station,
@@ -162,6 +168,7 @@ const server = new ApolloServer({
     fuelSaleResolvers,
     importDataResolvers,
     propaneDeliverResolvers,
+    propaneReportDwnldResolvers,
     propaneSaleAnnualReportResolvers,
     propaneSaleMonthReportResolvers,
     stationResolvers,
@@ -188,13 +195,13 @@ const server = new ApolloServer({
   },*/
 
   // Local development without authentication
-  /*context: async () => ({
+  context: async () => ({
     db: await new AWS.DynamoDB(),
     docClient: await new AWS.DynamoDB.DocumentClient(),
-  }),*/
+  }),
 
   // Local development with authentication headers
-  context: async ({ req }) => {
+  /*context: async ({ req }) => {
     let user
     try {
       user = await authCheck(req.headers.authorization)
@@ -206,7 +213,7 @@ const server = new ApolloServer({
       db: await new AWS.DynamoDB(),
       user,
     }
-  },
+  },*/
 })
 
 // console.log('process.env: ', process.env.NODE_ENV)

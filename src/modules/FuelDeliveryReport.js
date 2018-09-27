@@ -83,7 +83,10 @@ export const fetchFuelDeliveryReport = async (date, stationID, db) => {
     for (const d in tmpDeliveries) {
       let data = {}
       tmpDeliveries[d].forEach(del => {
-        data[del.fuelType] = Number(del.litres)
+        if (!data[del.fuelType]) {
+          data[del.fuelType] = 0
+        }
+        data[del.fuelType] += Number(del.litres)
       })
       ret.push({
         data,

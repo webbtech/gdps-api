@@ -179,8 +179,13 @@ const persistDips = async (input, db) => {
     date: input[0].date,
     stationID: input[0].stationID,
   }
-  let pRes = await persistDipOS(params, db)
-  // console.log('pRes: ', pRes)
+
+  try {
+    await persistDipOS(params, db)
+  } catch (err) {
+    console.log('err: ', err) // eslint-disable-line
+    return err
+  }
 
   return {
     ok: 1,
