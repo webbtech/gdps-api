@@ -4,7 +4,7 @@ import { gql } from 'apollo-server'
 import { uniq } from 'lodash'
 
 import { dynamoTables as dt } from '../config/constants'
-import { fetchTanks } from './StationTank'
+import { fetchStationTanks } from './StationTank'
 
 
 export const typeDef = gql`
@@ -39,7 +39,7 @@ export const fetchDipOSMonth = async (date, stationID, db) => {
   const startDay = dte.startOf('month').format('YYYYMMDD')
   const endDay = dte.endOf('month').format('YYYYMMDD')
 
-  const tanks = await fetchTanks(stationID, db)
+  const tanks = await fetchStationTanks(stationID, db)
   const fuelTypes = uniq(tanks.map(t => t.fuelType))
 
   let res = {
@@ -71,7 +71,7 @@ export const fetchDipOSMonth = async (date, stationID, db) => {
     result.Items.forEach(ele => {
       res.overShort.push({
         date: Number(ele.Date.N),
-        data: extractOS(ele.OverShort.M),
+        data: extractOS(ele.OverShort.M, fuelTypes),
       })
     })
 
@@ -88,16 +88,23 @@ export const fetchDipOSMonth = async (date, stationID, db) => {
   })
 }
 
-const extractOS = (os) => {
+const extractOS = (os, fuelTypes) => {
   const ret = {}
-  for (const ft in os) {
-    const map = os[ft].M
-    ret[ft] = {
-      tankLitres: Number(map.TankLitres.N),
-      litresSold: parseFloat(map.LitresSold.N),
-      overShort: parseFloat(map.OverShort.N),
-      fuelType: map.FuelType.S,
+  fuelTypes.forEach(ft => {
+    // Same issue with dropped fuel type addressed here to add a default 'empty' value
+    const map = os[ft] ? os[ft].M : {
+      FuelType:   {S: ft},
+      LitresSold: {N: 0.00},
+      OverShort:  {N: 0.00},
+      TankLitres: {N: 0},
     }
-  }
+
+    ret[ft] = {
+      fuelType:   map.FuelType.S,
+      litresSold: parseFloat(map.LitresSold.N) || 0.00,
+      overShort:  parseFloat(map.OverShort.N),
+      tankLitres: Number(map.TankLitres.N),
+    }
+  })
   return ret
 }

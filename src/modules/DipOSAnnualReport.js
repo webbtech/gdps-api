@@ -4,7 +4,7 @@ import { gql } from 'apollo-server'
 import { uniq } from 'lodash'
 
 import { dynamoTables as dt } from '../config/constants'
-import { fetchTanks } from './StationTank'
+import { fetchStationTanks } from './StationTank'
 
 export const typeDef = gql`
   extend type Query {
@@ -33,7 +33,7 @@ export const fetchDipOSAnnual = async (date, stationID, db) => {
   const dte = moment(date)
   const year = Number(dte.year())
 
-  const tanks = await fetchTanks(stationID, db)
+  const tanks = await fetchStationTanks(stationID, db)
   const fuelTypes = uniq(tanks.map(t => t.fuelType))
 
   let res = {
@@ -81,16 +81,25 @@ export const fetchDipOSAnnual = async (date, stationID, db) => {
       accumRes[m] = {}
       fuelTypes.forEach(ft => {
         accumRes[m][ft] = monthRes[m].reduce(
-          (accum, val) => accum + parseFloat(val.OverShort.M[ft].M.OverShort.N), 0.00
+          (accum, val) => {
+            const sum = val.OverShort.M[ft] ? val.OverShort.M[ft].M.OverShort.N : 0.00
+            return accum + parseFloat(sum)
+          }, 0.00
         )
       })
     })
+
+
 
     // Sum each fuel type
     let summary = {}
     fuelTypes.forEach(ft => {
       summary[ft] = result.Items.reduce(
-        (accum, val) => accum + parseFloat(val.OverShort.M[ft].M.OverShort.N), 0.00
+        // (accum, val) => accum + parseFloat(val.OverShort.M[ft].M.OverShort.N), 0.00
+        (accum, val) => {
+          const sum = val.OverShort.M[ft] ? val.OverShort.M[ft].M.OverShort.N : 0.00
+          return accum + parseFloat(sum)
+        }, 0.00
       )
     })
 
@@ -112,3 +121,4 @@ const setMonths = year => {
   }
   return months
 }
+

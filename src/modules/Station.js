@@ -9,6 +9,7 @@ import { sortBy } from 'lodash'
 export const typeDef = gql`
   extend type Query {
     stations: [Station]
+    station(stationID: String!): Station
   }
   type Station {
     id: String!
@@ -20,6 +21,9 @@ export const resolvers = {
   Query: {
     stations: (_, args, { db }) => {
       return fetchStations(args, db)
+    },
+    station: (_, { stationID }, { db }) => {
+      return fetchStation(stationID, db)
     },
   },
 }
@@ -42,4 +46,26 @@ export const fetchStations = (args, db) => {
   })
 }
 
+export const fetchStation = (stationID, db) => {
 
+  const params = {
+    TableName: dt.STATION,
+    Key: {
+      ID: {S: stationID},
+    },
+    AttributesToGet: [
+      'ID', 'Name',
+    ],
+  }
+
+  return db.getItem(params).promise().then(result => {
+    if (!result.Item) {
+      return null
+    }
+
+    return {
+      id: result.Item.ID.S,
+      name: result.Item.Name.S,
+    }
+  })
+}

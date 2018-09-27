@@ -30,3 +30,7 @@ export function setMonths(year) {
   }
   return months
 }
+
+export function momentToNumber(mDte) {
+  return Number(mDte.format('YYYYMMDD'))
+}

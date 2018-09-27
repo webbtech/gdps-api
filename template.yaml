@@ -19,21 +19,8 @@ Resources:
             Path: /graphql
             # Path: /
             Method: ANY
-        # GetRequest:
-        #   Type: Api
-        #   Properties:
-        #     Path: /
-        #     Method: get
-        # PostRequest:
-        #   Type: Api
-        #   Properties:
-        #     Path: /
-        #     Method: post
-        # OptionsRequest:
-        #   Type: Api
-        #   Properties:
-        #     Path: /
-        #     Method: options
+      Tags:
+        BillTo: 'Gales'
 
   LambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -66,24 +53,12 @@ Resources:
             - dynamodb:GetShardIterator
             - dynamodb:ListStreams
             - dynamodb:PutItem
+            - dynamodb:UpdateItem
             - dynamodb:Query
             - dynamodb:Scan
             Resource: "arn:aws:dynamodb:ca-central-1:407205661819:table/GDS_*"
             # Resource: "*"
             # Resource: !GetAtt PDFTable.Arn
-
-  # HelloWorldFunction:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     Handler: index.handler
-  #     Runtime: nodejs6.10
-  #     CodeUri: src/
-  #     Events:
-  #       GetRequest:
-  #         Type: Api
-  #         Properties:
-  #           Path: /
-  #           Method: get
 
   # GraphQLInspector:
   #   Type: AWS::Serverless::Function
@@ -97,3 +72,4 @@ Resources:
   #         Properties:
   #           Path: /graphiql
   #           Method: get
+  

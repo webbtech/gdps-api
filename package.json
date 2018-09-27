@@ -18,11 +18,12 @@
     "jwk-to-pem": "2.0.0",
     "lodash": "4.17.10",
     "moment": "2.22.2",
+    "moment-range": "4.0.1",
     "path": "0.12.7",
     "ramda": "0.25.0",
     "request": "2.88.0",
     "request-promise-native": "1.0.5",
-    "uuid": "3.2.1"
+    "uuid": "3.3.2"
   },
   "devDependencies": {
     "aws-sdk": "2.256.1",

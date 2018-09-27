@@ -3,8 +3,7 @@ import { dynamoTables as dt } from '../config/constants'
 import request from 'request-promise-native'
 import moment from 'moment'
 
-// fixme: move to safer place
-const LambdaFuncPath = 'https://z5wcxm5bv3.execute-api.ca-central-1.amazonaws.com/Prod/export'
+import { FUELSALE_EXPORT_LAMBDA as lambdaURI } from '../config/constants'
 // const LambdaFuncPath = 'http://127.0.0.1:3000/export'
 
 const validImportTypes = ['fuel', 'propane']
@@ -47,9 +46,8 @@ export const resolvers = {
 
 const importFuel = (dates, importType, user) => {
 
-  // console.log('user: ', user)
   let options = {
-    uri: LambdaFuncPath,
+    uri: lambdaURI,
     headers: {
         'Authorization': `${user.accessToken}`,
     },

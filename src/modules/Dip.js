@@ -129,8 +129,6 @@ const persistDips = async (input, db) => {
 
   if (!input.length > 0) return null
 
-  // console.log('input in persistDips: ', input)
-
   // Could use batch BatchWriteItem, but not sure that we'd gain anything
   await asyncForEach(input, async i => {
 
@@ -150,6 +148,7 @@ const persistDips = async (input, db) => {
       await db.putItem(params).promise()
     } catch (err) {
       console.log('Error: ', err) // eslint-disable-line
+      return err
     }
 
     // Create delivery
@@ -180,7 +179,13 @@ const persistDips = async (input, db) => {
     date: input[0].date,
     stationID: input[0].stationID,
   }
-  await persistDipOS(params, db)
+
+  try {
+    await persistDipOS(params, db)
+  } catch (err) {
+    console.log('err: ', err) // eslint-disable-line
+    return err
+  }
 
   return {
     ok: 1,

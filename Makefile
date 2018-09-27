@@ -2,7 +2,7 @@ include .env
 
 default: compileapp package deploy
 
-fulldeploy: buildapp package deploy
+deploy: buildapp awsPackage awsDeploy
 
 buildapp:
 	rm -fr build/* && \
@@ -26,25 +26,25 @@ run: compileapp
 run-graph:
 	sam local invoke --env-vars env.json "GraphQLInspector"
 
-package:
+awsPackage:
 	aws cloudformation package \
    --template-file template.yaml \
-   --output-template-file packaged-template.yaml \
+   --output-template-file packaged-tpl.yaml \
    --s3-bucket $(AWS_BUCKET_NAME) \
-   --s3-prefix lambda \
+   --s3-prefix $(AWS_BUCKET_PREFIX) \
    --profile $(AWS_PROFILE)
 
 # sam package --template-file template.yaml --s3-bucket $(AWS_BUCKET_NAME) \
-# --s3-prefix lambda --output-template-file packaged-template.yaml --profile $(AWS_PROFILE)
+# --s3-prefix lambda --output-template-file packaged-tpl.yaml --profile $(AWS_PROFILE)
 
-deploy:
+awsDeploy:
 	aws cloudformation deploy \
-   --template-file packaged-template.yaml \
+   --template-file packaged-tpl.yaml \
    --stack-name $(AWS_STACK_NAME) \
    --capabilities CAPABILITY_IAM \
    --profile $(AWS_PROFILE)
 
-#sam deploy --template-file packaged-template.yaml --stack-name $(AWS_STACK_NAME) \
+#sam deploy --template-file packaged-tpl.yaml --stack-name $(AWS_STACK_NAME) \
 #	--capabilities CAPABILITY_IAM --profile $(AWS_PROFILE)
 
 describe:
