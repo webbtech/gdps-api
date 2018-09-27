@@ -10,7 +10,7 @@ buildapp:
 	cp ./src/auth/jwk.json build/auth/ && \
 	cp package.json build/ && \
 	cd ./build && \
-	rm server.dev.js
+	rm server.dev.js && \
 	yarn install --prod && \
 	find . -mtime +10950 -print -exec touch {} \;
 
