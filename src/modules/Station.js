@@ -1,10 +1,10 @@
 import { gql } from 'apollo-server'
 
+import { sortBy } from 'lodash'
 import { dynamoTables as dt } from '../config/constants'
 // import { promisify } from '../utils/dynamoUtils'
 
 // const R = require('ramda')
-import { sortBy } from 'lodash'
 
 export const typeDef = gql`
   extend type Query {
@@ -19,12 +19,8 @@ export const typeDef = gql`
 
 export const resolvers = {
   Query: {
-    stations: (_, args, { db }) => {
-      return fetchStations(args, db)
-    },
-    station: (_, { stationID }, { db }) => {
-      return fetchStation(stationID, db)
-    },
+    stations: (_, args, { db }) => fetchStations(args, db),
+    station: (_, { stationID }, { db }) => fetchStation(stationID, db),
   },
 }
 
@@ -34,11 +30,11 @@ export const fetchStations = (args, db) => {
     AttributesToGet: ['ID', 'Name'],
   }
 
-  return db.scan(params).promise().then(result => {
-    let res = []
-    result.Items.forEach(element => {
+  return db.scan(params).promise().then((result) => {
+    const res = []
+    result.Items.forEach((element) => {
       res.push({
-        id:   element.ID.S,
+        id: element.ID.S,
         name: element.Name.S,
       })
     })
@@ -47,18 +43,17 @@ export const fetchStations = (args, db) => {
 }
 
 export const fetchStation = (stationID, db) => {
-
   const params = {
     TableName: dt.STATION,
     Key: {
-      ID: {S: stationID},
+      ID: { S: stationID },
     },
     AttributesToGet: [
       'ID', 'Name',
     ],
   }
 
-  return db.getItem(params).promise().then(result => {
+  return db.getItem(params).promise().then((result) => {
     if (!result.Item) {
       return null
     }

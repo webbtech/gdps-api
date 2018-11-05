@@ -26,33 +26,26 @@ input PropaneRemoveDeliverInput {
 
 export const resolvers = {
   Query: {
-    propaneDelivery: (_, { date }, { db }) => {
-      return fetchDelivery(date, db)
-    },
+    propaneDelivery: (_, { date }, { db }) => fetchDelivery(date, db),
   },
   Mutation: {
-    createPropaneDelivery: (_, { input }, { db }) => {
-      return persistPropaneDelivery(input, db)
-    },
-    removePropaneDelivery: (_, { input }, { db }) => {
-      return deletePropaneDelivery(input, db)
-    },
+    createPropaneDelivery: (_, { input }, { db }) => persistPropaneDelivery(input, db),
+    removePropaneDelivery: (_, { input }, { db }) => deletePropaneDelivery(input, db),
   },
 }
 
 export const fetchDelivery = (date, db) => {
-
   const params = {
     TableName: dt.PROPANE_DELIVER,
     Key: {
-      Date: {N: date.toString()},
+      Date: { N: date.toString() },
     },
     AttributesToGet: [
       'Date', 'Litres',
     ],
   }
 
-  return db.getItem(params).promise().then(result => {
+  return db.getItem(params).promise().then((result) => {
     if (!result.Item) {
       return null
     }
@@ -64,14 +57,13 @@ export const fetchDelivery = (date, db) => {
 }
 
 const persistPropaneDelivery = async (input, db) => {
-
   const year = moment(input.date.toString()).year()
   const params = {
     TableName: dt.PROPANE_DELIVER,
     Item: {
-      Date:   {N: input.date.toString()},
-      Litres: {N: input.litres.toString()},
-      Year: {N: year.toString()},
+      Date: { N: input.date.toString() },
+      Litres: { N: input.litres.toString() },
+      Year: { N: year.toString() },
     },
   }
 
@@ -88,11 +80,10 @@ const persistPropaneDelivery = async (input, db) => {
 }
 
 const deletePropaneDelivery = async (input, db) => {
-
   const params = {
     TableName: dt.PROPANE_DELIVER,
     Key: {
-      Date:   {N: input.date.toString()},
+      Date: { N: input.date.toString() },
     },
   }
 

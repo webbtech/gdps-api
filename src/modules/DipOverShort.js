@@ -28,36 +28,28 @@ export const typeDef = gql`
 `
 export const resolvers = {
   Query: {
-    dipOverShort: (_, { date, stationID }, { db }) => {
-      return fetchOS(date, stationID, db)
-    },
-    dipOverShortRange: (_, { dateFrom, dateTo, stationID }, { db }) => {
-      return fetchOSRange(dateFrom, dateTo, stationID, db)
-    },
+    dipOverShort: (_, { date, stationID }, { db }) => fetchOS(date, stationID, db),
+    dipOverShortRange: (_, { dateFrom, dateTo, stationID }, { db }) => fetchOSRange(dateFrom, dateTo, stationID, db),
   },
   Mutation: {
-    createDipOS: (_, { input }, { db }) => {
-      return persistDipOS(input, db)
-    },
+    createDipOS: (_, { input }, { db }) => persistDipOS(input, db),
   },
   JSON: GraphQLJSON,
 }
 
 export const fetchOS = (date, stationID, db) => {
-
   const params = {
     TableName: dt.DIP_OVERSHORT,
     Key: {
-      Date: {N: date.toString()},
-      StationID: {S: stationID},
+      Date: { N: date.toString() },
+      StationID: { S: stationID },
     },
     AttributesToGet: [
       'OverShort',
     ],
   }
 
-  return db.getItem(params).promise().then(result => {
-
+  return db.getItem(params).promise().then((result) => {
     if (undefined === result.Item) return null
     const overshort = result.Item.OverShort.M
 
@@ -69,31 +61,29 @@ export const fetchOS = (date, stationID, db) => {
 }
 
 export const fetchOSRange = (dateFrom, dateTo, stationID, db) => {
-
   const params = {
     TableName: dt.DIP_OVERSHORT,
     ExpressionAttributeNames: {
-        '#dte': 'Date',
+      '#dte': 'Date',
     },
     KeyConditionExpression: 'StationID = :stId AND #dte BETWEEN :dteFrom AND :dteTo',
     ExpressionAttributeValues: {
-      ':stId':    {S: stationID},
-      ':dteFrom': {N: dateFrom.toString()},
-      ':dteTo':   {N: dateTo.toString()},
+      ':stId': { S: stationID },
+      ':dteFrom': { N: dateFrom.toString() },
+      ':dteTo': { N: dateTo.toString() },
     },
     ProjectionExpression: '#dte, OverShort, StationID',
   }
 
-  return db.query(params).promise().then(result => {
-
+  return db.query(params).promise().then((result) => {
     if (!result.Items.length) return null
 
-    let res = []
-    result.Items.forEach(element => {
+    const res = []
+    result.Items.forEach((element) => {
       res.push({
-        date:           element.Date.N,
-        overShort:      extractOS(element.OverShort.M),
-        stationID:      element.StationID.S,
+        date: element.Date.N,
+        overShort: extractOS(element.OverShort.M),
+        stationID: element.StationID.S,
       })
     })
 
@@ -101,38 +91,37 @@ export const fetchOSRange = (dateFrom, dateTo, stationID, db) => {
   })
 }
 
-export const persistDipOS = async ( { date, stationID }, db) => {
+export const persistDipOS = async ({ date, stationID }, db) => {
+  const dateStr = date.toString()
+  const dateObj = moment(dateStr)
+  const dateTo = Number(dateObj.format('YYYYMMDD'))
+  const dateFrom = Number(moment(dateStr).subtract(1, 'days').format('YYYYMMDD'))
 
-  const dateStr   = date.toString()
-  const dateObj   = moment(dateStr)
-  const dateTo    = Number(dateObj.format('YYYYMMDD'))
-  const dateFrom  = Number(moment(dateStr).subtract(1, 'days').format('YYYYMMDD'))
-
-  const dips          = await fetchDipsRange(dateFrom, dateTo, stationID, db)
-  const deliveries    = await fetchDeliveries(dateTo, stationID, db)
-  const fuelSalesRes  = await fetchFuelSale(dateTo, stationID, db)
+  const dips = await fetchDipsRange(dateFrom, dateTo, stationID, db)
+  const deliveries = await fetchDeliveries(dateTo, stationID, db)
+  const fuelSalesRes = await fetchFuelSale(dateTo, stationID, db)
   // We're trapping this error because the dip won't calculate without, and
   // it's likely data hasn't been imported yet
   if (!fuelSalesRes) {
     throw new ApolloError('Missing fuel sale in persistDipOS')
   }
 
-  const prevDips    = aggregateDips(dips, dateFrom)
-  const curDips     = aggregateDips(dips, dateTo)
-  const curNetDips  = subDeliveries(curDips, deliveries)
-  const netDips     = subPrevDips(prevDips, curNetDips)
-  const fuelSales   = extractFS(fuelSalesRes)
-  const dipOSs      = dipOverShorts(netDips, fuelSales)
+  const prevDips = aggregateDips(dips, dateFrom)
+  const curDips = aggregateDips(dips, dateTo)
+  const curNetDips = subDeliveries(curDips, deliveries)
+  const netDips = subPrevDips(prevDips, curNetDips)
+  const fuelSales = extractFS(fuelSalesRes)
+  const dipOSs = dipOverShorts(netDips, fuelSales)
 
 
   const params = {
     TableName: dt.DIP_OVERSHORT,
     Item: {
-      Date:       {N: dateTo.toString()},
-      OverShort:  {M: dipOSs},
-      StationID:  {S: stationID},
-      Year:       {N: dateObj.format('YYYY')},
-      YearMonth:  {N: dateObj.format('YYYYMM')},
+      Date: { N: dateTo.toString() },
+      OverShort: { M: dipOSs },
+      StationID: { S: stationID },
+      Year: { N: dateObj.format('YYYY') },
+      YearMonth: { N: dateObj.format('YYYYMM') },
     },
   }
 
@@ -147,27 +136,26 @@ export const persistDipOS = async ( { date, stationID }, db) => {
     date: dateTo,
     stationID,
   }
-
 }
 
 // ======================== Utility functions =============================== //
 
-const extractOS = overshort => {
-  let ret = {}
-  for (let m in overshort) {
+const extractOS = (overshort) => {
+  const ret = {}
+  for (const m in overshort) {
     const ft = overshort[m].M
     ret[m] = {
-      fuelType:   ft.FuelType.S,
+      fuelType: ft.FuelType.S,
       tankLitres: parseInt(ft.TankLitres.N, 10),
-      overShort:  parseFloat(ft.OverShort.N),
+      overShort: parseFloat(ft.OverShort.N),
       litresSold: parseFloat(ft.LitresSold.N),
     }
   }
   return ret
 }
 
-const extractFS = fuelSales => {
-  let sales = {}
+const extractFS = (fuelSales) => {
+  const sales = {}
   for (const ft in fuelSales.sales) {
     sales[ft] = parseFloat(fuelSales.sales[ft].N)
   }
@@ -179,10 +167,10 @@ const aggregateDips = (dips, date) => {
   const dps = dips.filter(dip => dip.date === dte)
   const fts = uniq(dps.map(dp => dp.fuelType))
 
-  let dpLtrs = {}
-  fts.forEach(ft => {
+  const dpLtrs = {}
+  fts.forEach((ft) => {
     dpLtrs[ft] = 0
-    dps.forEach(dp => {
+    dps.forEach((dp) => {
       if (dp.fuelType === ft) {
         dpLtrs[ft] += Number(dp.litres)
       }
@@ -192,7 +180,7 @@ const aggregateDips = (dips, date) => {
 }
 
 const subDeliveries = (dips, deliveries) => {
-  deliveries.forEach(del => {
+  deliveries.forEach((del) => {
     dips[del.fuelType] -= Number(del.litres)
   })
   return dips
@@ -201,9 +189,9 @@ const subDeliveries = (dips, deliveries) => {
 // The rule here says that if there was not a previous dip value (litres)
 // then that fuelType OS does not get created
 const subPrevDips = (prevDips, curDips) => {
-  let netDips = {}
+  const netDips = {}
   const fuelTypes = Object.keys(prevDips)
-  fuelTypes.forEach(ft => {
+  fuelTypes.forEach((ft) => {
     if (prevDips[ft]) { // skip any zero values
       netDips[ft] = prevDips[ft] - curDips[ft]
     }
@@ -212,15 +200,17 @@ const subPrevDips = (prevDips, curDips) => {
 }
 
 const dipOverShorts = (netDips, fuelSales) => {
-  let dipOSs = {}
+  const dipOSs = {}
   const fuelTypes = Object.keys(netDips)
-  fuelTypes.forEach(ft => {
-    dipOSs[ft] = {M:{
-      FuelType: {S: ft},
-      LitresSold: {N: fuelSales[ft].toString()},
-      OverShort:  {N: String(fuelSales[ft] - netDips[ft])},
-      TankLitres: {N: netDips[ft].toString()},
-    }}
+  fuelTypes.forEach((ft) => {
+    dipOSs[ft] = {
+      M: {
+        FuelType: { S: ft },
+        LitresSold: { N: fuelSales[ft].toString() },
+        OverShort: { N: String(fuelSales[ft] - netDips[ft]) },
+        TankLitres: { N: netDips[ft].toString() },
+      },
+    }
   })
   return dipOSs
 }

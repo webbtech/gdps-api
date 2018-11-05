@@ -1,7 +1,7 @@
 import { gql } from 'apollo-server'
-import { dynamoTables as dt } from '../config/constants'
 import request from 'request-promise-native'
 import moment from 'moment'
+import { dynamoTables as dt } from '../config/constants'
 
 import { FUELSALE_EXPORT_LAMBDA as lambdaURI } from '../config/constants'
 // const LambdaFuncPath = 'http://127.0.0.1:3000/export'
@@ -38,43 +38,37 @@ export const resolvers = {
     },
   },
   Query: {
-    importLog: (_, { importType }, { db }) => {
-      return fetchImports(importType, db)
-    },
+    importLog: (_, { importType }, { db }) => fetchImports(importType, db),
   },
 }
 
 const importFuel = (dates, importType, user) => {
-
-  let options = {
+  const options = {
     uri: lambdaURI,
     headers: {
-        'Authorization': `${user.accessToken}`,
+      Authorization: `${user.accessToken}`,
     },
     method: 'POST',
     json: {
       exportType: importType,
-      dateStart:  dates.startDate,
-      dateEnd:    dates.endDate,
+      dateStart: dates.startDate,
+      dateEnd: dates.endDate,
     },
   }
 
-  return request(options).then(body => {
-    return {
-      dateStart:  body.DateStart,
-      dateEnd:    body.DateEnd,
-      recordQty:  body.RecordQty,
-      importType: body.ImportType,
-      importDate: body.ImportDate,
-    }
-  })
+  return request(options).then(body => ({
+    dateStart: body.DateStart,
+    dateEnd: body.DateEnd,
+    recordQty: body.RecordQty,
+    importType: body.ImportType,
+    importDate: body.ImportDate,
+  }))
 }
 
 export const fetchImports = (importType, db) => {
-
   const params = {
     ExpressionAttributeValues: {
-      ':importType':  {S: importType},
+      ':importType': { S: importType },
     },
     KeyConditionExpression: 'ImportType = :importType',
     Limit: 40,
@@ -83,16 +77,15 @@ export const fetchImports = (importType, db) => {
     TableName: dt.IMPORT_LOG,
   }
 
-  return db.query(params).promise().then(result => {
-
-    let res = []
-    result.Items.forEach(ele => {
+  return db.query(params).promise().then((result) => {
+    const res = []
+    result.Items.forEach((ele) => {
       res.push({
-        dateStart:  ele.DateStart.S,
-        dateEnd:    ele.DateEnd.S,
+        dateStart: ele.DateStart.S,
+        dateEnd: ele.DateEnd.S,
         importDate: ele.ImportDate.S,
         importType: ele.ImportType.S,
-        recordQty:  ele.RecordQty.N,
+        recordQty: ele.RecordQty.N,
       })
     })
 
@@ -103,7 +96,6 @@ export const fetchImports = (importType, db) => {
 // ========================= Helper Functions ========================= //
 
 const validateDates = (startDate, endDate) => {
-
   const stDteValid = moment(startDate).isValid()
   const enDteValid = moment(endDate).isValid()
   if (!stDteValid || !enDteValid) {
@@ -117,7 +109,7 @@ const validateDates = (startDate, endDate) => {
   }
 }
 
-const validateType = type => {
+const validateType = (type) => {
   if (!validImportTypes.includes(type)) {
     console.error('ERROR: Invalid import type requested') // eslint-disable-line
     return false

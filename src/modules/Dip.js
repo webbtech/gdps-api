@@ -39,27 +39,18 @@ export const typeDef = gql`
 
 export const resolvers = {
   Query: {
-    dips: (_, { date, stationID }, { db }) => {
-      return fetchDips(date, stationID, db)
-    },
-    dipsRange: (_, { dateFrom, dateTo, stationID }, { db }) => {
-      return fetchDipsRange(dateFrom, dateTo, stationID, db)
-    },
+    dips: (_, { date, stationID }, { db }) => fetchDips(date, stationID, db),
+    dipsRange: (_, { dateFrom, dateTo, stationID }, { db }) => fetchDipsRange(dateFrom, dateTo, stationID, db),
   },
   Dip: {
-    fuelDelivery: ({ date, stationTankID }, args, { db }) => {
-      return fetchDelivery(date, stationTankID, db)
-    },
+    fuelDelivery: ({ date, stationTankID }, args, { db }) => fetchDelivery(date, stationTankID, db),
   },
   Mutation: {
-    createDips: (_, { input }, { db }) => {
-      return persistDips(input, db)
-    },
+    createDips: (_, { input }, { db }) => persistDips(input, db),
   },
 }
 
 export const fetchDips = (date, stationID, db) => {
-
   const params = {
     TableName: dt.DIP,
     IndexName: 'StationIDIndex',
@@ -69,23 +60,23 @@ export const fetchDips = (date, stationID, db) => {
       '#level': 'Level',
     },
     ExpressionAttributeValues: {
-      ':stId':  {S: stationID},
-      ':dte':   {N: date.toString()},
+      ':stId': { S: stationID },
+      ':dte': { N: date.toString() },
     },
     ProjectionExpression: '#dte, FuelType, #level, Litres, StationID, StationTankID',
   }
 
-  return db.query(params).promise().then(result => {
+  return db.query(params).promise().then((result) => {
     if (result.Items.length <= 0) return null
-    let res = []
-    result.Items.forEach(element => {
+    const res = []
+    result.Items.forEach((element) => {
       res.push({
-        date:           element.Date.N,
-        fuelType:       element.FuelType.S,
-        level:          element.Level.N,
-        litres:         element.Litres.N,
-        stationID:      element.StationID.S,
-        stationTankID:  element.StationTankID.S,
+        date: element.Date.N,
+        fuelType: element.FuelType.S,
+        level: element.Level.N,
+        litres: element.Litres.N,
+        stationID: element.StationID.S,
+        stationTankID: element.StationTankID.S,
       })
     })
     return res
@@ -102,23 +93,23 @@ export const fetchDipsRange = async (dateFrom, dateTo, stationID, db) => {
       '#level': 'Level',
     },
     ExpressionAttributeValues: {
-      ':stId':  {S: stationID},
-      ':dateFrom':   {N: dateFrom.toString()},
-      ':dateTo':   {N: dateTo.toString()},
+      ':stId': { S: stationID },
+      ':dateFrom': { N: dateFrom.toString() },
+      ':dateTo': { N: dateTo.toString() },
     },
     ProjectionExpression: '#dte, FuelType, #level, Litres, StationTankID',
   }
 
-  return db.query(params).promise().then(result => {
+  return db.query(params).promise().then((result) => {
     if (result.Items.length <= 0) return null
-    let res = []
-    result.Items.forEach(element => {
+    const res = []
+    result.Items.forEach((element) => {
       res.push({
-        date:           element.Date.N,
-        fuelType:       element.FuelType.S,
-        level:          element.Level.N,
-        litres:         element.Litres.N,
-        stationTankID:  element.StationTankID.S,
+        date: element.Date.N,
+        fuelType: element.FuelType.S,
+        level: element.Level.N,
+        litres: element.Litres.N,
+        stationTankID: element.StationTankID.S,
       })
     })
     return res
@@ -126,21 +117,19 @@ export const fetchDipsRange = async (dateFrom, dateTo, stationID, db) => {
 }
 
 const persistDips = async (input, db) => {
-
   if (!input.length > 0) return null
 
   // Could use batch BatchWriteItem, but not sure that we'd gain anything
-  await asyncForEach(input, async i => {
-
+  await asyncForEach(input, async (i) => {
     const params = {
       TableName: dt.DIP,
       Item: {
-        Date:           {N: i.date.toString()},
-        FuelType:       {S: i.fuelType},
-        Level:          {N: i.level.toString()},
-        Litres:         {N: i.litres.toString()},
-        StationID:      {S: i.stationID},
-        StationTankID:  {S: i.stationTankID},
+        Date: { N: i.date.toString() },
+        FuelType: { S: i.fuelType },
+        Level: { N: i.level.toString() },
+        Litres: { N: i.litres.toString() },
+        StationID: { S: i.stationID },
+        StationTankID: { S: i.stationTankID },
       },
     }
 
@@ -154,19 +143,19 @@ const persistDips = async (input, db) => {
     // Create delivery
     if (i.delivery) {
       const item = {
-        date:           i.date,
-        fuelType:       i.fuelType,
-        litres:         i.delivery,
-        stationID:      i.stationID,
-        stationTankID:  i.stationTankID,
+        date: i.date,
+        fuelType: i.fuelType,
+        litres: i.delivery,
+        stationID: i.stationID,
+        stationTankID: i.stationTankID,
       }
       await persistDelivery(item, db)
 
     // Delete any deliveries that may have been removed during an edit.
     } else {
       const item = {
-        date:           i.date,
-        stationTankID:  i.stationTankID,
+        date: i.date,
+        stationTankID: i.stationTankID,
       }
       await removeDelivery(item, db)
     }

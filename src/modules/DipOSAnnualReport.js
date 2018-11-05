@@ -21,54 +21,51 @@ export const typeDef = gql`
 
 export const resolvers = {
   Query: {
-    dipOSAnnualReport: (_, { date, stationID }, { db }) => {
-      return fetchDipOSAnnual(date, stationID, db)
-    },
+    dipOSAnnualReport: (_, { date, stationID }, { db }) => fetchDipOSAnnual(date, stationID, db),
   },
   JSON: GraphQLJSON,
 }
 
 export const fetchDipOSAnnual = async (date, stationID, db) => {
-
   const dte = moment(date)
   const year = Number(dte.year())
 
   const tanks = await fetchStationTanks(stationID, db)
   const fuelTypes = uniq(tanks.map(t => t.fuelType))
 
-  let res = {
+  const res = {
     fuelTypes,
     months: {},
     stationID,
     year,
   }
-  let monthRes = {}
+  const monthRes = {}
 
   const months = setMonths(year)
-  months.forEach(m => {
+  months.forEach((m) => {
     monthRes[m] = []
   })
 
   const params = {
-    IndexName:  'StationIDYearIndex',
-    TableName:  dt.DIP_OVERSHORT,
+    IndexName: 'StationIDYearIndex',
+    TableName: dt.DIP_OVERSHORT,
     ExpressionAttributeNames: {
-        '#year': 'Year',
+      '#year': 'Year',
     },
     ExpressionAttributeValues: {
-      ':stId':  {S: stationID},
-      ':year':  {N: year.toString()},
+      ':stId': { S: stationID },
+      ':year': { N: year.toString() },
     },
     KeyConditionExpression: 'StationID = :stId AND #year = :year',
     ProjectionExpression: 'OverShort, YearMonth',
   }
 
-  return await db.query(params).promise().then(result => {
+  return await db.query(params).promise().then((result) => {
     if (!result.Items.length) return null
 
     // Group results into months
-    months.forEach(m => {
-      result.Items.forEach(ele => {
+    months.forEach((m) => {
+      result.Items.forEach((ele) => {
         if (Number(ele.YearMonth.N) === m) {
           monthRes[m].push(ele)
         }
@@ -76,10 +73,10 @@ export const fetchDipOSAnnual = async (date, stationID, db) => {
     })
 
     // Sum each month by fuel type
-    let accumRes = {}
-    months.forEach(m => {
+    const accumRes = {}
+    months.forEach((m) => {
       accumRes[m] = {}
-      fuelTypes.forEach(ft => {
+      fuelTypes.forEach((ft) => {
         accumRes[m][ft] = monthRes[m].reduce(
           (accum, val) => {
             const sum = val.OverShort.M[ft] ? val.OverShort.M[ft].M.OverShort.N : 0.00
@@ -90,10 +87,9 @@ export const fetchDipOSAnnual = async (date, stationID, db) => {
     })
 
 
-
     // Sum each fuel type
-    let summary = {}
-    fuelTypes.forEach(ft => {
+    const summary = {}
+    fuelTypes.forEach((ft) => {
       summary[ft] = result.Items.reduce(
         // (accum, val) => accum + parseFloat(val.OverShort.M[ft].M.OverShort.N), 0.00
         (accum, val) => {
@@ -110,10 +106,10 @@ export const fetchDipOSAnnual = async (date, stationID, db) => {
   })
 }
 
-const setMonths = year => {
-  let months = []
+const setMonths = (year) => {
+  const months = []
   const curYrM = Number(moment().format('YYYYMM'))
-  for (let i=0; i < 12; i++) {
+  for (let i = 0; i < 12; i++) {
     const dte = Number(moment(new Date(year, i)).format('YYYYMM'))
     if (dte <= curYrM) {
       months.push(dte)
@@ -121,4 +117,3 @@ const setMonths = year => {
   }
   return months
 }
-
