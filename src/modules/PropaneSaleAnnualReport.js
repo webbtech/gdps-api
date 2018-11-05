@@ -20,16 +20,13 @@ export const typeDef = gql`
 
 export const resolvers = {
   Query: {
-    propaneSaleAnnualReport: (_, { date }, { db }) => {
-      return compilePropaneAnnualSales(date, db)
-    },
+    propaneSaleAnnualReport: (_, { date }, { db }) => compilePropaneAnnualSales(date, db),
   },
   JSON: GraphQLJSON,
 }
 
 const compilePropaneAnnualSales = async (date, db) => {
-
-  let res = {
+  const res = {
     deliveries: {},
     deliveryTotal: 0,
     sales: {},
@@ -43,8 +40,7 @@ const compilePropaneAnnualSales = async (date, db) => {
 }
 
 const fetchPropaneSales = async (year, db) => {
-
-  let res = {
+  const res = {
     sales: {},
     salesSummary: {},
   }
@@ -52,28 +48,27 @@ const fetchPropaneSales = async (year, db) => {
   const months = setMonths(year)
 
   const params = {
-    IndexName:  'YearDateIndex',
-    TableName:  dt.PROPANE_SALE,
+    IndexName: 'YearDateIndex',
+    TableName: dt.PROPANE_SALE,
     ExpressionAttributeNames: {
-        '#dte': 'Date',
-        '#year': 'Year',
+      '#dte': 'Date',
+      '#year': 'Year',
     },
     ExpressionAttributeValues: {
-      ':year': {N: year},
+      ':year': { N: year },
     },
     KeyConditionExpression: '#year = :year',
     ProjectionExpression: '#dte, TankID, Sales',
   }
 
-  return await db.query(params).promise().then(result => {
-
+  return await db.query(params).promise().then((result) => {
     // Aggregate results into months and tank ids
-    let sales = {}
-    months.forEach(m => {
+    const sales = {}
+    months.forEach((m) => {
       sales[m] = {}
       sales[m][propaneTankIDs[0]] = 0.00
       sales[m][propaneTankIDs[1]] = 0.00
-      result.Items.forEach(item => {
+      result.Items.forEach((item) => {
         const eleDte = Number(moment(item.Date.N).format('YYYYMM'))
         if (eleDte === m) {
           if (propaneTankIDs[0] === Number(item.TankID.N)) {
@@ -86,7 +81,7 @@ const fetchPropaneSales = async (year, db) => {
     })
 
     // Sum by tankID
-    let sum = {}
+    const sum = {}
     sum[propaneTankIDs[0]] = 0.00
     sum[propaneTankIDs[1]] = 0.00
     for (const m in sales) {
@@ -102,30 +97,28 @@ const fetchPropaneSales = async (year, db) => {
 }
 
 const fetchPropaneAnnualDeliveries = async (year, db) => {
-
   const months = setMonths(year)
 
   const params = {
-    IndexName:  'YearDateIndex',
-    TableName:  dt.PROPANE_DELIVER,
+    IndexName: 'YearDateIndex',
+    TableName: dt.PROPANE_DELIVER,
     ExpressionAttributeNames: {
-        '#dte':   'Date',
-        '#year':  'Year',
+      '#dte': 'Date',
+      '#year': 'Year',
     },
     ExpressionAttributeValues: {
-      ':year':  {N: year},
+      ':year': { N: year },
     },
     KeyConditionExpression: '#year = :year',
     ProjectionExpression: '#dte, Litres',
   }
 
-  return await db.query(params).promise().then(result => {
-
-    let res = {}
+  return await db.query(params).promise().then((result) => {
+    const res = {}
     let total = 0
-    months.forEach(m => {
+    months.forEach((m) => {
       res[m] = 0
-      result.Items.forEach(item => {
+      result.Items.forEach((item) => {
         const eleDte = Number(moment(item.Date.N).format('YYYYMM'))
         if (eleDte === m) {
           res[m] += Number(item.Litres.N)
@@ -140,4 +133,3 @@ const fetchPropaneAnnualDeliveries = async (year, db) => {
     }
   })
 }
-

@@ -29,15 +29,12 @@ export const typeDef = gql`
 
 export const resolvers = {
   Query: {
-    fuelSaleDetailedReport: (_, { date, stationID }, { db }) => {
-      return fetchFuelSales(date, stationID, db)
-    },
+    fuelSaleDetailedReport: (_, { date, stationID }, { db }) => fetchFuelSales(date, stationID, db),
   },
   JSON: GraphQLJSON,
 }
 
 export const fetchFuelSales = async (date, stationID, db) => {
-
   const dte = moment(date.toString())
   const year = dte.year()
   const startWk = dte.startOf('month').week()
@@ -45,17 +42,17 @@ export const fetchFuelSales = async (date, stationID, db) => {
   const yearWeekStart = parseInt(`${dte.year()}${startWk}`, 10)
   const yearWeekEnd = parseInt(`${dte.year()}${endWk}`, 10)
 
-  let yrRange = numberRange(startWk, endWk).map(wk => `${year}${wk}`)
+  const yrRange = numberRange(startWk, endWk).map(wk => `${year}${wk}`)
 
   const tanks = await fetchStationTanks(stationID, db)
   const fuelTypes = uniq(tanks.map(t => t.fuelType))
 
   // Initialize temp var for processing later
-  let docs = {}
+  const docs = {}
   yrRange.forEach(yr => docs[yr] = [])
 
   // Initialize result object
-  let res = {
+  const res = {
     stationID,
     fuelTypes,
   }
@@ -65,22 +62,21 @@ export const fetchFuelSales = async (date, stationID, db) => {
     IndexName: 'StationIDYearWeekIndex',
     ProjectionExpression: '#dte, Sales, StationID, YearWeek',
     ExpressionAttributeNames: {
-        '#dte': 'Date',
+      '#dte': 'Date',
     },
     ExpressionAttributeValues: {
-      ':stId':      {S: stationID},
-      ':yrWkStart': {N: yearWeekStart.toString()},
-      ':yrWkEnd':   {N: yearWeekEnd.toString()},
+      ':stId': { S: stationID },
+      ':yrWkStart': { N: yearWeekStart.toString() },
+      ':yrWkEnd': { N: yearWeekEnd.toString() },
     },
     KeyConditionExpression: 'StationID = :stId AND YearWeek BETWEEN :yrWkStart AND :yrWkEnd',
   }
 
-  return db.query(params).promise().then(result => {
-
+  return db.query(params).promise().then((result) => {
     if (!result.Items.length) return null
 
-    result.Items.forEach(ele => {
-      yrRange.forEach(yrwk => {
+    result.Items.forEach((ele) => {
+      yrRange.forEach((yrwk) => {
         if (yrwk == ele.YearWeek.N) {
           docs[yrwk].push({
             date: parseInt(ele.Date.N, 10),
@@ -90,11 +86,11 @@ export const fetchFuelSales = async (date, stationID, db) => {
       })
     })
 
-    let weekSales = []
+    const weekSales = []
     for (const yr in docs) {
       weekSales.push({
-        sales:    sortBy(docs[yr], [yr => yr.date]),
-        totals:   sumSales(docs[yr], fuelTypes),
+        sales: sortBy(docs[yr], [yr => yr.date]),
+        totals: sumSales(docs[yr], fuelTypes),
         yearWeek: yr,
       })
     }
@@ -117,7 +113,7 @@ const extractSales = (sales, fuelTypes) => {
 const sumSales = (sales, fuelTypes) => {
   const ret = {}
   fuelTypes.forEach(ft => ret[ft] = 0)
-  sales.forEach(s => {
+  sales.forEach((s) => {
     for (const ft in ret) {
       ret[ft] += s.sales[ft]
     }

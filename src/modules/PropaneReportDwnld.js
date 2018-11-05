@@ -40,21 +40,16 @@ type PropaneDwnld {
 
 export const resolvers = {
   Mutation: {
-    propaneSignedURL: (_, { date }, { user }) => {
-      return createSignedURL(date, user)
-    },
+    propaneSignedURL: (_, { date }, { user }) => createSignedURL(date, user),
   },
   Query: {
-    propaneReportDwnld: (_, { date }, { docClient }) => {
-      return compilePropaneReportDwnld(date, docClient)
-    },
+    propaneReportDwnld: (_, { date }, { docClient }) => compilePropaneReportDwnld(date, docClient),
   },
   JSON: GraphQLJSON,
 }
 
 const compilePropaneReportDwnld = async (date, docClient) => {
-
-  let res = {
+  const res = {
     date: '',
     sales: {},
     deliveries: {},
@@ -71,33 +66,32 @@ const compilePropaneReportDwnld = async (date, docClient) => {
 }
 
 const fetchSales = async (startDay, endDay, docClient) => {
-
   const year = Number(startDay.format('YYYY'))
   const range = moment.range(startDay, endDay)
   const startDate = momentToNumber(startDay)
   const endDate = momentToNumber(endDay)
 
-  let dayRange = []
-  for (let day of range.by('day')) {
+  const dayRange = []
+  for (const day of range.by('day')) {
     dayRange.push(Number(day.format('YYYYMMDD')))
   }
 
   const params = {
-    TableName:  dt.PROPANE_SALE,
-    IndexName:  'YearDateIndex',
+    TableName: dt.PROPANE_SALE,
+    IndexName: 'YearDateIndex',
     ExpressionAttributeValues: {
       ':startDate': startDate,
-      ':endDate':   endDate,
-      ':year':      year,
+      ':endDate': endDate,
+      ':year': year,
     },
     ExpressionAttributeNames: {
-        '#dte':   'Date',
-        '#year':  'Year',
+      '#dte': 'Date',
+      '#year': 'Year',
     },
     KeyConditionExpression: '#year = :year AND #dte BETWEEN :startDate AND :endDate',
   }
 
-  let result = []
+  const result = []
   let dbRes
   try {
     dbRes = await docClient.query(params).promise()
@@ -106,12 +100,12 @@ const fetchSales = async (startDay, endDay, docClient) => {
     return err
   }
 
-  dayRange.forEach(d => {
+  dayRange.forEach((d) => {
     const record = {
       date: moment(d.toString()).format('YYYY-MM-DD'),
       sales: {},
     }
-    dbRes.Items.forEach(ele => {
+    dbRes.Items.forEach((ele) => {
       if (ele.Date === d) {
         record.sales[ele.TankID] = ele.Sales
       }
@@ -123,27 +117,26 @@ const fetchSales = async (startDay, endDay, docClient) => {
 }
 
 const fetchDeliveries = async (startDay, endDay, docClient) => {
-
   const year = Number(startDay.format('YYYY'))
   const startDate = momentToNumber(startDay)
   const endDate = momentToNumber(endDay)
 
   const params = {
-    TableName:  dt.PROPANE_DELIVER,
-    IndexName:  'YearDateIndex',
+    TableName: dt.PROPANE_DELIVER,
+    IndexName: 'YearDateIndex',
     ExpressionAttributeValues: {
       ':startDate': startDate,
-      ':endDate':   endDate,
-      ':year':      year,
+      ':endDate': endDate,
+      ':year': year,
     },
     ExpressionAttributeNames: {
-      '#dte':   'Date',
-      '#year':  'Year',
+      '#dte': 'Date',
+      '#year': 'Year',
     },
     KeyConditionExpression: '#year = :year AND #dte BETWEEN :startDate AND :endDate',
   }
 
-  let result = {}
+  const result = {}
   let dbRes
 
   try {
@@ -153,7 +146,7 @@ const fetchDeliveries = async (startDay, endDay, docClient) => {
     return err
   }
 
-  dbRes.Items.forEach(ele => {
+  dbRes.Items.forEach((ele) => {
     const dte = moment(ele.Date.toString()).format('YYYY-MM-DD')
     result[dte] = ele.Litres
   })
@@ -162,13 +155,12 @@ const fetchDeliveries = async (startDay, endDay, docClient) => {
 }
 
 const createSignedURL = async (date, user) => {
-
   const retDate = Number(moment(date).format('YYYYMMDD'))
 
   const options = {
     uri: lambdaURI,
     headers: {
-        'Authorization': `${user.accessToken}`,
+      Authorization: `${user.accessToken}`,
     },
     method: 'POST',
     json: {
@@ -176,10 +168,8 @@ const createSignedURL = async (date, user) => {
     },
   }
 
-  return request(options).then(body => {
-    return {
-      date: retDate,
-      reportLink: body.data.url,
-    }
-  })
+  return request(options).then(body => ({
+    date: retDate,
+    reportLink: body.data.url,
+  }))
 }

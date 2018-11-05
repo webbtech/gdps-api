@@ -2,10 +2,10 @@
 import { ApolloServer } from 'apollo-server'
 
 import AWS from 'aws-sdk'
-import { createError } from'apollo-errors'
+import { createError } from 'apollo-errors'
 
 import authCheck from './auth/authCheck'
-import graphql from './graphql.js'
+import graphql from './graphql'
 import { config } from './config/dynamo'
 
 const AuthorizationError = createError('AuthorizationError', {

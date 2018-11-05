@@ -30,63 +30,54 @@ export const typeDef = gql`
 `
 export const resolvers = {
   Query: {
-    fuelPrice: (_, { date, stationID }, { db }) => {
-      return fetchPrice(date, stationID, db)
-    },
-    fuelPriceWeekAvg: (_, { yearWeek, stationID }, { db }) => {
-      return fetchFuelPriceWeekAvg(yearWeek, stationID, db)
-    },
-    fuelPriceWeekAvgRange: (_, { yearWeekStart, yearWeekEnd, stationID }, { db }) => {
-      return fetchFuelPriceWeekAvgRange(yearWeekStart, yearWeekEnd, stationID, db)
-    },
+    fuelPrice: (_, { date, stationID }, { db }) => fetchPrice(date, stationID, db),
+    fuelPriceWeekAvg: (_, { yearWeek, stationID }, { db }) => fetchFuelPriceWeekAvg(yearWeek, stationID, db),
+    fuelPriceWeekAvgRange: (_, { yearWeekStart, yearWeekEnd, stationID }, { db }) => fetchFuelPriceWeekAvgRange(yearWeekStart, yearWeekEnd, stationID, db),
   },
   JSON: GraphQLJSON,
 }
 
 export const fetchPrice = (date, stationID, db) => {
-
   const params = {
     TableName: dt.FUEL_PRICE,
     ExpressionAttributeNames: {
       '#dte': 'Date',
     },
     Key: {
-      Date: {N: date.toString()},
-      StationID: {S: stationID},
+      Date: { N: date.toString() },
+      StationID: { S: stationID },
     },
     ProjectionExpression: '#dte, Price, StationID, YearWeek',
   }
 
-  return db.getItem(params).promise().then(result => {
+  return db.getItem(params).promise().then((result) => {
     if (undefined === result.Item) return null
     return {
-      date:       result.Item.Date.N,
-      price:      result.Item.Price.N,
-      stationID:  result.Item.StationID.S,
-      yearWeek:   result.Item.YearWeek.N,
+      date: result.Item.Date.N,
+      price: result.Item.Price.N,
+      stationID: result.Item.StationID.S,
+      yearWeek: result.Item.YearWeek.N,
     }
   })
 }
 
 export const fetchFuelPriceWeekAvg = (yearWeek, stationID, db) => {
-
-  let params = {
+  const params = {
     ProjectionExpression: 'Price',
     TableName: dt.FUEL_PRICE,
     ExpressionAttributeValues: {
-      ':stId':  {S: stationID},
-      ':yrWk':  {N: yearWeek.toString()},
+      ':stId': { S: stationID },
+      ':yrWk': { N: yearWeek.toString() },
     },
     KeyConditionExpression: 'StationID = :stId',
     FilterExpression: 'YearWeek = :yrWk',
   }
 
-  return db.query(params).promise().then(result => {
-
+  return db.query(params).promise().then((result) => {
     if (!result.Items.length) return null
 
-    let res = []
-    result.Items.forEach(element => {
+    const res = []
+    result.Items.forEach((element) => {
       res.push(parseFloat(element.Price.N))
     })
 
@@ -99,32 +90,30 @@ export const fetchFuelPriceWeekAvg = (yearWeek, stationID, db) => {
 }
 
 export const fetchFuelPriceWeekAvgRange = (yearWeekStart, yearWeekEnd, stationID, db) => {
-
-  let params = {
+  const params = {
     TableName: dt.FUEL_PRICE,
     IndexName: 'StationIDYearWeekIndex',
     ProjectionExpression: 'Price, YearWeek',
     ExpressionAttributeValues: {
-      ':stId':  {S: stationID},
-      ':yrWkSt':  {N: yearWeekStart.toString()},
-      ':yrWkEd':  {N: yearWeekEnd.toString()},
+      ':stId': { S: stationID },
+      ':yrWkSt': { N: yearWeekStart.toString() },
+      ':yrWkEd': { N: yearWeekEnd.toString() },
     },
     KeyConditionExpression: 'StationID = :stId AND YearWeek BETWEEN :yrWkSt AND :yrWkEd',
   }
 
   const range = numberRange(yearWeekStart, yearWeekEnd)
-  return db.query(params).promise().then(result => {
-
+  return db.query(params).promise().then((result) => {
     if (!result.Items.length) return null
 
     // Initiate a temporary object for results
-    let res = {}
-    range.forEach(yw => {
+    const res = {}
+    range.forEach((yw) => {
       res[yw] = []
     })
 
-    result.Items.forEach(element => {
-      range.forEach(yw => {
+    result.Items.forEach((element) => {
+      range.forEach((yw) => {
         if (element.YearWeek.N == yw) {
           res[yw].push(parseFloat(element.Price.N))
         }
@@ -132,8 +121,8 @@ export const fetchFuelPriceWeekAvgRange = (yearWeekStart, yearWeekEnd, stationID
     })
 
     // Set all average prices for each week
-    let prices = {}
-    range.forEach(yw => {
+    const prices = {}
+    range.forEach((yw) => {
       prices[yw] = averageArr(res[yw])
     })
 

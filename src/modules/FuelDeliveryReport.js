@@ -24,16 +24,13 @@ export const typeDef = gql`
 
 export const resolvers = {
   Query: {
-    fuelDeliveryReport: (_, { date, stationID }, { db }) => {
-      return fetchFuelDeliveryReport(date, stationID, db)
-    },
+    fuelDeliveryReport: (_, { date, stationID }, { db }) => fetchFuelDeliveryReport(date, stationID, db),
   },
   JSON: GraphQLJSON,
 }
 
 export const fetchFuelDeliveryReport = async (date, stationID, db) => {
-
-  let report = {}
+  const report = {}
 
   const dte = moment(date.toString())
   const startDay = dte.startOf('month').format('YYYYMMDD')
@@ -48,24 +45,23 @@ export const fetchFuelDeliveryReport = async (date, stationID, db) => {
     TableName: dt.FUEL_DELIVER,
     ProjectionExpression: '#dte, FuelType, Litres',
     ExpressionAttributeNames: {
-        '#dte': 'Date',
+      '#dte': 'Date',
     },
     ExpressionAttributeValues: {
-      ':stId':      {S: stationID},
-      ':startDay': {N: startDay},
-      ':endDay':   {N: endDay},
+      ':stId': { S: stationID },
+      ':startDay': { N: startDay },
+      ':endDay': { N: endDay },
     },
     KeyConditionExpression: 'StationID = :stId AND #dte BETWEEN :startDay AND :endDay',
   }
 
-  return db.query(params).promise().then(result => {
-
+  return db.query(params).promise().then((result) => {
     if (!result.Items.length) return null
 
     // Aggregate deliveries by day
-    let tmpDeliveries = {}
-    dayRange.forEach(d => {
-      result.Items.forEach(item => {
+    const tmpDeliveries = {}
+    dayRange.forEach((d) => {
+      result.Items.forEach((item) => {
         if (d === Number(item.Date.N)) {
           if (!tmpDeliveries[d]) {
             tmpDeliveries[d] = []
@@ -79,10 +75,10 @@ export const fetchFuelDeliveryReport = async (date, stationID, db) => {
     })
 
     // Create map of deliveries
-    let ret = []
+    const ret = []
     for (const d in tmpDeliveries) {
-      let data = {}
-      tmpDeliveries[d].forEach(del => {
+      const data = {}
+      tmpDeliveries[d].forEach((del) => {
         if (!data[del.fuelType]) {
           data[del.fuelType] = 0
         }
@@ -96,9 +92,9 @@ export const fetchFuelDeliveryReport = async (date, stationID, db) => {
     report.deliveries = ret
 
     // Create a summary of deliveries
-    let sum = {}
-    report.deliveries.forEach(d => {
-      report.fuelTypes.forEach(ft => {
+    const sum = {}
+    report.deliveries.forEach((d) => {
+      report.fuelTypes.forEach((ft) => {
         if (!sum[ft]) {
           sum[ft] = 0
         }

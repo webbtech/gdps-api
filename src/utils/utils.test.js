@@ -5,7 +5,6 @@
 import { averageArr, numberRange } from './utils'
 
 describe('averageArr', () => {
-
   it('return accurate average', () => {
     const vals = [2, 4, 6]
     const avg = averageArr(vals)
@@ -18,14 +17,13 @@ describe('averageArr', () => {
   })
 
   it('return accurate float average', () => {
-    const vals = [ 119.6, 119.6, 121.63333333333, 121.63333333333 ]
+    const vals = [119.6, 119.6, 121.63333333333, 121.63333333333]
     const avg = averageArr(vals)
     expect(avg).toEqual(120.616666666665)
   })
 })
 
 describe('numberRange', () => {
-
   it('returns accurate range', () => {
     const start = 2
     const end = 10

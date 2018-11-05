@@ -26,15 +26,12 @@ export const typeDef = gql`
 
 export const resolvers = {
   Query: {
-    dipOSMonthReport: (_, { date, stationID }, { db }) => {
-      return fetchDipOSMonth(date, stationID, db)
-    },
+    dipOSMonthReport: (_, { date, stationID }, { db }) => fetchDipOSMonth(date, stationID, db),
   },
   JSON: GraphQLJSON,
 }
 
 export const fetchDipOSMonth = async (date, stationID, db) => {
-
   const dte = moment(date.toString())
   const startDay = dte.startOf('month').format('YYYYMMDD')
   const endDay = dte.endOf('month').format('YYYYMMDD')
@@ -42,7 +39,7 @@ export const fetchDipOSMonth = async (date, stationID, db) => {
   const tanks = await fetchStationTanks(stationID, db)
   const fuelTypes = uniq(tanks.map(t => t.fuelType))
 
-  let res = {
+  const res = {
     stationID,
     fuelTypes,
     period: date,
@@ -54,29 +51,28 @@ export const fetchDipOSMonth = async (date, stationID, db) => {
     TableName: dt.DIP_OVERSHORT,
     ProjectionExpression: '#dte, OverShort',
     ExpressionAttributeNames: {
-        '#dte': 'Date',
+      '#dte': 'Date',
     },
     ExpressionAttributeValues: {
-      ':stId':      {S: stationID},
-      ':startDay': {N: startDay},
-      ':endDay':   {N: endDay},
+      ':stId': { S: stationID },
+      ':startDay': { N: startDay },
+      ':endDay': { N: endDay },
     },
     KeyConditionExpression: 'StationID = :stId AND #dte BETWEEN :startDay AND :endDay',
   }
 
-  return db.query(params).promise().then(result => {
-
+  return db.query(params).promise().then((result) => {
     if (!result.Items.length) return null
 
-    result.Items.forEach(ele => {
+    result.Items.forEach((ele) => {
       res.overShort.push({
         date: Number(ele.Date.N),
         data: extractOS(ele.OverShort.M, fuelTypes),
       })
     })
 
-    let summary = {}
-    fuelTypes.forEach(ft => {
+    const summary = {}
+    fuelTypes.forEach((ft) => {
       summary[ft] = res.overShort.reduce(
         (accum, val) => accum + val.data[ft].overShort, 0.00
       )
@@ -90,19 +86,19 @@ export const fetchDipOSMonth = async (date, stationID, db) => {
 
 const extractOS = (os, fuelTypes) => {
   const ret = {}
-  fuelTypes.forEach(ft => {
+  fuelTypes.forEach((ft) => {
     // Same issue with dropped fuel type addressed here to add a default 'empty' value
     const map = os[ft] ? os[ft].M : {
-      FuelType:   {S: ft},
-      LitresSold: {N: 0.00},
-      OverShort:  {N: 0.00},
-      TankLitres: {N: 0},
+      FuelType: { S: ft },
+      LitresSold: { N: 0.00 },
+      OverShort: { N: 0.00 },
+      TankLitres: { N: 0 },
     }
 
     ret[ft] = {
-      fuelType:   map.FuelType.S,
+      fuelType: map.FuelType.S,
       litresSold: parseFloat(map.LitresSold.N) || 0.00,
-      overShort:  parseFloat(map.OverShort.N),
+      overShort: parseFloat(map.OverShort.N),
       tankLitres: Number(map.TankLitres.N),
     }
   })

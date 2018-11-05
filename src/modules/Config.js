@@ -1,17 +1,16 @@
 import { dynamoTables as dt } from '../config/constants'
 
-export const fetchTankID = async docClient => {
-
+export const fetchTankID = async (docClient) => {
   const params = {
     TableName: dt.CONFIG,
     Key: {
-      Key:   'TankID',
+      Key: 'TankID',
     },
     ExpressionAttributeNames: {
       '#val': 'Value',
     },
     ExpressionAttributeValues: {
-        ':inc': 1,
+      ':inc': 1,
     },
     UpdateExpression: 'SET #val = #val + :inc',
     ReturnValues: 'UPDATED_NEW',

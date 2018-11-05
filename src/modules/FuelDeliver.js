@@ -1,7 +1,7 @@
 import { gql } from 'apollo-server'
 
-import { dynamoTables as dt } from '../config/constants'
 import moment from 'moment'
+import { dynamoTables as dt } from '../config/constants'
 
 export const typeDef = gql`
 extend type Mutation {
@@ -27,19 +27,14 @@ input DeliveryInput {
 
 export const resolvers = {
   Query: {
-    fuelDeliveries: (_, { date, stationID }, { db }) => {
-      return fetchDeliveries(date, stationID, db)
-    },
+    fuelDeliveries: (_, { date, stationID }, { db }) => fetchDeliveries(date, stationID, db),
   },
   Mutation: {
-    createDelivery: (_, { input }, { db }) => {
-      return persistDelivery(input, db)
-    },
+    createDelivery: (_, { input }, { db }) => persistDelivery(input, db),
   },
 }
 
 export const fetchDeliveries = (date, stationID, db) => {
-
   const dte = moment(date.toString()).format('YYYYMMDD')
   const params = {
     TableName: dt.FUEL_DELIVER,
@@ -49,20 +44,20 @@ export const fetchDeliveries = (date, stationID, db) => {
       '#dte': 'Date',
     },
     ExpressionAttributeValues: {
-      ':stId':  {S: stationID},
-      ':dte':   {N: dte},
+      ':stId': { S: stationID },
+      ':dte': { N: dte },
     },
     ProjectionExpression: '#dte, FuelType, Litres, StationTankID',
   }
 
-  return db.query(params).promise().then(result => {
-    let res = []
-    result.Items.forEach(ele => {
+  return db.query(params).promise().then((result) => {
+    const res = []
+    result.Items.forEach((ele) => {
       res.push({
-        date:           ele.Date.N,
-        fuelType:       ele.FuelType.S,
-        litres:         ele.Litres.N,
-        stationTankID:  ele.StationTankID.S,
+        date: ele.Date.N,
+        fuelType: ele.FuelType.S,
+        litres: ele.Litres.N,
+        stationTankID: ele.StationTankID.S,
       })
     })
     return res
@@ -70,7 +65,6 @@ export const fetchDeliveries = (date, stationID, db) => {
 }
 
 export const fetchDelivery = (date, stationTankID, db) => {
-
   const params = {
     TableName: dt.FUEL_DELIVER,
     KeyConditionExpression: 'StationTankID = :stId and #dte = :dte',
@@ -78,33 +72,32 @@ export const fetchDelivery = (date, stationTankID, db) => {
       '#dte': 'Date',
     },
     ExpressionAttributeValues: {
-      ':stId':  {S: stationTankID},
-      ':dte':   {N: date.toString()},
+      ':stId': { S: stationTankID },
+      ':dte': { N: date.toString() },
     },
     ProjectionExpression: '#dte, FuelType, Litres, StationTankID',
   }
 
-  return db.query(params).promise().then(result => {
+  return db.query(params).promise().then((result) => {
     const item = result.Items[0]
     if (!item) return
     return {
-      fuelType:       item.FuelType.S,
-      litres:         item.Litres.N,
-      stationTankID:  item.StationTankID.S,
+      fuelType: item.FuelType.S,
+      litres: item.Litres.N,
+      stationTankID: item.StationTankID.S,
     }
   })
 }
 
 export const persistDelivery = async (input, db) => {
-
   const params = {
     TableName: dt.FUEL_DELIVER,
     Item: {
-      Date:           {N: input.date.toString()},
-      FuelType:       {S: input.fuelType},
-      Litres:         {N: input.litres.toString()},
-      StationID:      {S: input.stationID},
-      StationTankID:  {S: input.stationTankID},
+      Date: { N: input.date.toString() },
+      FuelType: { S: input.fuelType },
+      Litres: { N: input.litres.toString() },
+      StationID: { S: input.stationID },
+      StationTankID: { S: input.stationTankID },
     },
   }
 
@@ -124,9 +117,10 @@ export const removeDelivery = async (input, db) => {
   const params = {
     TableName: dt.FUEL_DELIVER,
     Key: {
-      'Date':         {N: input.date.toString()},
-      StationTankID:  {S: input.stationTankID},
-    }}
+      Date: { N: input.date.toString() },
+      StationTankID: { S: input.stationTankID },
+    },
+  }
 
   try {
     await db.deleteItem(params).promise()

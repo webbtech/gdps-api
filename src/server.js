@@ -1,7 +1,7 @@
-import { ApolloServer} from 'apollo-server-lambda'
+import { ApolloServer } from 'apollo-server-lambda'
 
 import AWS from 'aws-sdk'
-import { createError } from'apollo-errors'
+import { createError } from 'apollo-errors'
 
 import authCheck from './auth/authCheck'
 import graphql from './graphql.js'
