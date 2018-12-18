@@ -113,7 +113,6 @@ export const persistDipOS = async ({ date, stationID }, db) => {
   const fuelSales = extractFS(fuelSalesRes)
   const dipOSs = dipOverShorts(netDips, fuelSales)
 
-
   const params = {
     TableName: dt.DIP_OVERSHORT,
     Item: {
