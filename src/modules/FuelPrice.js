@@ -2,13 +2,13 @@ import { gql } from 'apollo-server'
 import GraphQLJSON from 'graphql-type-json'
 
 import { dynamoTables as dt } from '../config/constants'
-import { averageArr, numberRange } from '../utils/utils'
+import { averageArr, monthStartEnd, wkRange } from '../utils/utils'
 
 export const typeDef = gql`
   extend type Query {
     fuelPrice(date: Int, stationID: String!): FuelPrice
     fuelPriceWeekAvg(yearWeek: Int!, stationID: String!): FuelAverage
-    fuelPriceWeekAvgRange(yearWeekStart: Int!, yearWeekEnd: Int!, stationID: String!): FuelAverageRange
+    fuelPriceWeekAvgRange(date: String!, stationID: String!): FuelAverageRange
   }
   type FuelPrice {
     date: Int
@@ -30,9 +30,21 @@ export const typeDef = gql`
 `
 export const resolvers = {
   Query: {
-    fuelPrice: (_, { date, stationID }, { db }) => fetchPrice(date, stationID, db),
-    fuelPriceWeekAvg: (_, { yearWeek, stationID }, { db }) => fetchFuelPriceWeekAvg(yearWeek, stationID, db),
-    fuelPriceWeekAvgRange: (_, { yearWeekStart, yearWeekEnd, stationID }, { db }) => fetchFuelPriceWeekAvgRange(yearWeekStart, yearWeekEnd, stationID, db),
+    fuelPrice: (
+      _,
+      { date, stationID },
+      { db }
+    ) => fetchPrice(date, stationID, db),
+    fuelPriceWeekAvg: (
+      _,
+      { yearWeek, stationID },
+      { db }
+    ) => fetchFuelPriceWeekAvg(yearWeek, stationID, db),
+    fuelPriceWeekAvgRange: (
+      _,
+      { date, stationID },
+      { docClient }
+    ) => fetchFuelPriceWeekAvgRange(date, stationID, docClient),
   },
   JSON: GraphQLJSON,
 }
@@ -89,46 +101,48 @@ export const fetchFuelPriceWeekAvg = (yearWeek, stationID, db) => {
   })
 }
 
-export const fetchFuelPriceWeekAvgRange = (yearWeekStart, yearWeekEnd, stationID, db) => {
+export const fetchFuelPriceWeekAvgRange = (date, stationID, docClient) => {
+  const [dateStart, dateEnd] = monthStartEnd(date)
+  const weekRange = wkRange(date)
+
   const params = {
     TableName: dt.FUEL_PRICE,
-    IndexName: 'StationIDYearWeekIndex',
-    ProjectionExpression: 'Price, YearWeek',
-    ExpressionAttributeValues: {
-      ':stId': { S: stationID },
-      ':yrWkSt': { N: yearWeekStart.toString() },
-      ':yrWkEd': { N: yearWeekEnd.toString() },
+    ExpressionAttributeNames: {
+      '#dte': 'Date',
     },
-    KeyConditionExpression: 'StationID = :stId AND YearWeek BETWEEN :yrWkSt AND :yrWkEd',
+    ExpressionAttributeValues: {
+      ':stId': stationID,
+      ':dateStart': dateStart,
+      ':dateEnd': dateEnd,
+    },
+    KeyConditionExpression: 'StationID = :stId AND #dte BETWEEN :dateStart AND :dateEnd',
+    ProjectionExpression: 'Price, YearWeek',
   }
 
-  const range = numberRange(yearWeekStart, yearWeekEnd)
-  return db.query(params).promise().then((result) => {
+  return docClient.query(params).promise().then((result) => {
     if (!result.Items.length) return null
 
     // Initiate a temporary object for results
     const res = {}
-    range.forEach((yw) => {
-      res[yw] = []
-    })
+    weekRange.forEach((yw) => { res[yw] = [] })
 
     result.Items.forEach((element) => {
-      range.forEach((yw) => {
-        if (element.YearWeek.N == yw) {
-          res[yw].push(parseFloat(element.Price.N))
+      weekRange.forEach((yw) => {
+        if (element.YearWeek === yw) {
+          res[yw].push(parseFloat(element.Price))
         }
       })
     })
 
     // Set all average prices for each week
     const prices = {}
-    range.forEach((yw) => {
+    weekRange.forEach((yw) => {
       prices[yw] = averageArr(res[yw])
     })
 
     return {
-      dateStart: yearWeekStart,
-      dateEnd: yearWeekEnd,
+      dateStart,
+      dateEnd,
       prices,
       stationID,
     }

@@ -2,7 +2,12 @@ import GraphQLJSON from 'graphql-type-json'
 import { gql } from 'apollo-server'
 import moment from 'moment'
 
-import { asyncForEach, numberRange } from '../utils/utils'
+import {
+  asyncForEach,
+  monthStartEnd,
+  monthWeekRanges,
+  wkRange,
+} from '../utils/utils'
 import { dynamoTables as dt } from '../config/constants'
 import { fetchFuelPriceWeekAvgRange } from './FuelPrice'
 import { fetchStations } from './Station'
@@ -12,143 +17,151 @@ export const typeDef = gql`
     fuelSaleListReport(date: String!): FuelSaleListReport
   }
   type FuelSaleListReport {
-    periodHeader: JSON
-    periodTotals: JSON
-    sales: [StationSales]
-    totalsByFuel: JSON
+    periodHeader: [PeriodHeader]!
+    periodTotals: [PeriodTotal]!
+    periodSales: [StationSales]!
+    totalsByFuel: FuelSales!
   }
   type StationSales {
     fuelPrices: JSON,
-    periods: JSON,
+    periods: [Period],
     stationID: String,
     stationName: String
-    stationTotal: JSON
+    stationTotal: FuelSales
+  }
+  type Period {
+    dates: JSON,
+    fuelSales: FuelSales
+  }
+  type PeriodHeader {
+    yearWeek: String,
+    startDate: String,
+    endDate: String,
+    week: String
+  }
+  type PeriodTotal {
+    period: String,
+    NL: Float,
+    DSL: Float
+  }
+  type FuelSales {
+    NL: Float,
+    DSL: Float
   }
 `
 
 export const resolvers = {
   Query: {
-    fuelSaleListReport: (_, { date }, { db }) => fetchFuelSalesAll(date, db),
+    fuelSaleListReport: (_, { date }, { db, docClient }) => fetchFuelSalesAll(date, db, docClient),
   },
   JSON: GraphQLJSON,
 }
 
-const fetchFuelSalesAll = async (date, db) => {
-  const dte = moment(date)
-  const startWk = dte.startOf('month').week()
-  const endWk = dte.endOf('month').week()
-  const yearWeekStart = parseInt(`${dte.year()}${startWk}`, 10)
-  const yearWeekEnd = parseInt(`${dte.year()}${endWk}`, 10)
-
+const fetchFuelSalesAll = async (date, db, docClient) => {
+  const weekRange = wkRange(date)
   const stations = await fetchStations(null, db)
+  const periodSales = []
 
-  const sales = []
-
+  let stSales
   await asyncForEach(stations, async (station) => {
-    const stSales = await fetchStationFuelSales(yearWeekStart, yearWeekEnd, station, db)
+    stSales = await fetchStationFuelSales(date, station, docClient)
     if (stSales) {
-      sales.push(stSales)
+      periodSales.push(stSales)
     }
   })
 
-  if (!sales.length) {
+  if (!periodSales.length) {
     return null
   }
-  const yrRange = numberRange(yearWeekStart, yearWeekEnd)
-  const periodTotals = setPeriodTotals(sales, yrRange)
-  const totalsByFuel = {
-    NL: 0,
-    DSL: 0,
-  }
-  for (const period in periodTotals) {
-    totalsByFuel.NL += periodTotals[period].NL
-    totalsByFuel.DSL += periodTotals[period].DSL
-  }
-  const periodHeader = {}
-  yrRange.forEach((yr) => {
-    periodHeader[yr] = setDates(yr)
-  })
+
+  // console.log('periodSales: ', periodSales[0].periods)
+  const periodTotals = setPeriodTotals(periodSales, weekRange)
+  const totalsByFuel = setTotalsByFuel(periodTotals)
+  const periodHeader = setWeekPeriods(weekRange)
 
   return {
     periodHeader,
+    // periodOrder: weekRange.map(wk => wk.toString()),
     periodTotals,
     totalsByFuel,
-    sales,
+    periodSales,
   }
 }
 
-const fetchStationFuelSales = async (yearWeekStart, yearWeekEnd, station, db) => {
+const fetchStationFuelSales = async (date, station, docClient) => {
+  const [dateStart, dateEnd] = monthStartEnd(date)
+  const weekRange = wkRange(date)
+  const ranges = monthWeekRanges(date)
+
   const params = {
-    IndexName: 'StationIDYearWeekIndex',
     TableName: dt.FUEL_SALE,
     ExpressionAttributeNames: {
       '#dte': 'Date',
     },
     ExpressionAttributeValues: {
-      ':stId': { S: station.id },
-      ':yrWkStart': { N: yearWeekStart.toString() },
-      ':yrWkEnd': { N: yearWeekEnd.toString() },
+      ':stId': station.id,
+      ':dateStart': dateStart,
+      ':dateEnd': dateEnd,
     },
-    KeyConditionExpression: 'StationID = :stId AND YearWeek BETWEEN :yrWkStart AND :yrWkEnd',
+    KeyConditionExpression: 'StationID = :stId AND #dte BETWEEN :dateStart AND :dateEnd',
     ProjectionExpression: '#dte, StationID, Sales, YearWeek',
   }
 
-  const yrRange = numberRange(yearWeekStart, yearWeekEnd)
-  const fuelPrices = await fetchFuelPriceWeekAvgRange(yearWeekStart, yearWeekEnd, station.id, db)
+  const fuelPrices = await fetchFuelPriceWeekAvgRange(date, station.id, docClient)
 
   const docs = {}
-  yrRange.forEach(yr => docs[yr] = [])
+  weekRange.forEach((yr) => { docs[yr] = [] })
 
-  return await db.query(params).promise().then((result) => {
+  return docClient.query(params).promise().then((result) => {
     if (!result.Items.length) return null
 
-    // Group results by yearWeek
-    result.Items.forEach((ele) => {
-      yrRange.forEach((yrwk) => {
-        if (yrwk == ele.YearWeek.N) {
-          docs[yrwk].push(ele.Sales.M)
+    const sales = ranges.map((range) => {
+      const s = {
+        NL: 0.00,
+        DSL: 0.00,
+      }
+
+      result.Items.forEach((item) => {
+        if (item.Date >= range.startDate && item.Date <= range.endDate) {
+          s.NL += item.Sales.NL
+          s.NL += item.Sales.SNL
+          s.DSL += item.Sales.DSL
+          s.DSL += item.Sales.CDSL
         }
       })
+      return {
+        dates: range,
+        fuelSales: s,
+      }
     })
+
+    const stationTotal = {
+      NL: sales.reduce((accum, val) => accum + parseFloat(val.fuelSales.NL), 0),
+      DSL: sales.reduce((accum, val) => accum + parseFloat(val.fuelSales.DSL), 0),
+    }
 
     const res = {
       fuelPrices,
-      periods: {},
+      periods: sales,
       stationID: station.id,
       stationName: station.name,
-      stationTotal: {},
+      stationTotal,
     }
-    yrRange.forEach((yr) => {
-      res.periods[yr] = {}
-      res.periods[yr].sales = sumSales(docs[yr])
-    })
-    res.stationTotal = sumStationTotals(res.periods)
 
     return res
   })
 }
 
-const sumStationTotals = (periods) => {
-  const ret = { NL: 0, DSL: 0 }
-  for (const yr in periods) {
-    ret.NL += periods[yr].sales.NL
-    ret.DSL += periods[yr].sales.DSL
+const setTotalsByFuel = (periodTotals) => {
+  const ret = {
+    NL: 0,
+    DSL: 0,
   }
+  Object.keys(periodTotals).forEach((p) => {
+    ret.NL += periodTotals[p].NL
+    ret.DSL += periodTotals[p].DSL
+  })
   return ret
-}
-
-const sumSales = (sales) => {
-  const fuels = {
-    NL: sales.reduce((accum, val) => accum + parseFloat(val.NL.N), 0),
-    SNL: sales.reduce((accum, val) => accum + parseFloat(val.SNL.N), 0),
-    DSL: sales.reduce((accum, val) => accum + parseFloat(val.DSL.N), 0),
-    CDSL: sales.reduce((accum, val) => accum + parseFloat(val.CDSL.N), 0),
-  }
-
-  return {
-    NL: fuels.NL + fuels.SNL,
-    DSL: fuels.DSL + fuels.CDSL,
-  }
 }
 
 const setDates = (yearWeek) => {
@@ -164,15 +177,31 @@ const setDates = (yearWeek) => {
   }
 }
 
-const setPeriodTotals = (sales, periods) => {
-  const ret = {}
-  periods.forEach((p) => {
-    const period = p.toString()
-    ret[period] = { NL: 0, DSL: 0 }
+const setPeriodTotals = (sales, weekRange) => {
+  const ret = []
+  weekRange.forEach((wk) => {
+    const week = wk.toString()
+    const wkObj = {
+      period: week,
+      NL: 0.00,
+      DSL: 0.00,
+    }
     sales.forEach((sale) => {
-      ret[period].NL += sale.periods[period].sales.NL
-      ret[period].DSL += sale.periods[period].sales.DSL
+      sale.periods.forEach((period) => {
+        if (period.dates.yearWeek === week) {
+          wkObj.NL += period.fuelSales.NL
+          wkObj.DSL += period.fuelSales.DSL
+        }
+      })
     })
+    ret.push(wkObj)
   })
   return ret
 }
+
+const setWeekPeriods = range => (
+  range.map(r => ({
+    yearWeek: r.toString(),
+    ...setDates(r),
+  }))
+)

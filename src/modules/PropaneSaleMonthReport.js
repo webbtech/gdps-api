@@ -2,106 +2,141 @@ import GraphQLJSON from 'graphql-type-json'
 import { gql } from 'apollo-server'
 import moment from 'moment'
 
-import { asyncForEach, numberRange } from '../utils/utils'
-import { dynamoTables as dt } from '../config/constants'
-import { propaneTankIDs } from '../config/constants'
+import { dynamoTables as dt, propaneTankIDs } from '../config/constants'
+import {
+  asyncForEach,
+  weekStartEnd,
+  weekDayRange,
+  wkRange,
+} from '../utils/utils'
 
 export const typeDef = gql`
   extend type Query {
     propaneSaleMonthReport(date: String!): PropaneSaleMonthReport
   }
   type PropaneSaleMonthReport {
+    periodSales: [PeriodSales]
+    deliveries: [Delivery]
+  }
+  type PeriodSales {
+    dates: PeriodDates
     sales: JSON
-    salesSummary: JSON
-    deliveries: JSON
+    summary: JSON
+  }
+  type PeriodDates {
+    dateStart: Int
+    dateEnd: Int
+    dayRange: [Int]
+    yearWeek: Int
+  }
+  type Delivery {
+    date: Int
+    litres: Int
   }
 `
 
 export const resolvers = {
   Query: {
-    propaneSaleMonthReport: (_, { date }, { db }) => compilePropaneMonthSales(date, db),
+    propaneSaleMonthReport: (
+      _,
+      { date },
+      { docClient }
+    ) => compilePropaneMonthSales(date, docClient),
   },
   JSON: GraphQLJSON,
 }
 
-const compilePropaneMonthSales = async (date, db) => {
+
+const compilePropaneMonthSales = async (date, docClient) => {
+  const weekRange = wkRange(date)
   const res = {
-    sales: {},
-    salesSummary: {},
+    periodSales: [],
     deliveries: [],
+    periodOrder: weekRange.map(wk => wk.toString()),
   }
 
-  const dte = moment(date)
-  const startWk = dte.startOf('month').week()
-  const endWk = dte.endOf('month').week()
-  const yearWeekStart = parseInt(`${dte.year()}${startWk}`, 10)
-  const yearWeekEnd = parseInt(`${dte.year()}${endWk}`, 10)
-
-  const yrWkRange = numberRange(yearWeekStart, yearWeekEnd)
-  await asyncForEach(yrWkRange, async (yrWk) => {
-    res.sales[yrWk] = await fetchPropaneMonthSales(yrWk, db)
-    res.deliveries = await fetchPropaneMonthDeliveries(dte, db)
+  await asyncForEach(weekRange, async (yrWk) => {
+    const s = await fetchPropaneMonthSales(yrWk, docClient)
+    res.periodSales.push(s)
+    res.deliveries = await fetchPropaneMonthDeliveries(date, docClient)
   })
-  res.salesSummary = setSummary(res.sales, propaneTankIDs)
 
   return Object.assign({}, res)
 }
 
-const fetchPropaneMonthSales = async (yrWk, db) => {
-  // Create start and end dates for week period
-  const year = yrWk.toString().substring(0, 4)
-  const week = yrWk.toString().substring(4)
-  const dte = moment().year(year).week(week)
-
-  const dayRange = []
-  for (let i = 0; i < 7; i++) {
-    dayRange.push(Number(dte.day(i).format('YYYYMMDD')))
+const fetchPropaneMonthSales = async (yrWk, docClient) => {
+  const [dateStart, dateEnd] = weekStartEnd(yrWk)
+  const dayRange = weekDayRange(dateStart)
+  const dates = {
+    dateStart,
+    dateEnd,
+    dayRange,
+    yearWeek: yrWk,
   }
 
   const params = {
-    IndexName: 'YearWeekDateIndex',
     TableName: dt.PROPANE_SALE,
     ExpressionAttributeNames: {
       '#dte': 'Date',
     },
     ExpressionAttributeValues: {
-      ':yrWk': { N: yrWk.toString() },
+      ':dateStart': dateStart,
+      ':dateEnd': dateEnd,
     },
-    KeyConditionExpression: 'YearWeek = :yrWk',
+    FilterExpression: '#dte BETWEEN :dateStart AND :dateEnd',
     ProjectionExpression: '#dte, TankID, Sales',
   }
 
   const tmpItems = []
-  return await db.query(params).promise().then((result) => {
-    if (!result.Items.length) return null
-
-    result.Items.forEach((ele) => {
-      tmpItems.push({
-        date: Number(ele.Date.N),
-        tankID: Number(ele.TankID.N),
-        sales: parseFloat(ele.Sales.N),
+  const retObject = {
+    dates,
+    sales: {},
+    summary: {},
+  }
+  return docClient.scan(params).promise().then((result) => {
+    if (result.Items.length) {
+      result.Items.forEach((ele) => {
+        tmpItems.push({
+          date: Number(ele.Date),
+          tankID: Number(ele.TankID),
+          sales: parseFloat(ele.Sales),
+        })
       })
-    })
+    }
 
-    const res = {}
+    const retSales = []
     dayRange.forEach((d) => {
+      const res = {}
       res[d] = {}
       tmpItems.forEach((item) => {
         if (item.date === d) {
           res[d][item.tankID] = item.sales
         }
       })
+      const sales = {
+        date: d,
+        ...res[d],
+      }
+      retSales.push(sales)
     })
+    retObject.sales = retSales
 
-    return res
+    // Set summary
+    retObject.summary[propaneTankIDs[0]] = retSales.reduce(
+      (accum, val) => accum + parseFloat(val[propaneTankIDs[0].toString()]), 0
+    )
+    retObject.summary[propaneTankIDs[1]] = retSales.reduce(
+      (accum, val) => accum + parseFloat(val[propaneTankIDs[1].toString()]), 0
+    )
+
+    return retObject
   })
 }
 
-const fetchPropaneMonthDeliveries = async (date, db) => {
-  const dte = moment(date)
-  const dteStart = dte.startOf('month').format('YYYYMMDD')
-  const dteEnd = dte.endOf('month').format('YYYYMMDD')
-  const year = dte.format('YYYY')
+const fetchPropaneMonthDeliveries = async (date, docClient) => {
+  const dteStart = moment(date).startOf('month').format('YYYYMMDD')
+  const dteEnd = moment(date).endOf('month').format('YYYYMMDD')
+  const year = moment(date).format('YYYY')
 
   const params = {
     IndexName: 'YearDateIndex',
@@ -111,39 +146,23 @@ const fetchPropaneMonthDeliveries = async (date, db) => {
       '#year': 'Year',
     },
     ExpressionAttributeValues: {
-      ':dteStart': { N: dteStart },
-      ':dteEnd': { N: dteEnd },
-      ':year': { N: year },
+      ':dteStart': Number(dteStart),
+      ':dteEnd': Number(dteEnd),
+      ':year': Number(year),
     },
     KeyConditionExpression: '#year = :year AND #dte BETWEEN :dteStart AND :dteEnd',
     ProjectionExpression: '#dte, Litres',
   }
 
-  return await db.query(params).promise().then((result) => {
+  return docClient.query(params).promise().then((result) => {
     const res = []
     result.Items.forEach((item) => {
       res.push({
-        date: Number(item.Date.N),
-        litres: Number(item.Litres.N),
+        date: Number(item.Date),
+        litres: Number(item.Litres),
       })
     })
 
     return res
   })
-}
-
-const setSummary = (sales, tankIds) => {
-  const ret = {}
-  for (const wk in sales) {
-    ret[wk] = {
-      [tankIds[0]]: 0,
-      [tankIds[1]]: 0,
-    }
-    for (const dt in sales[wk]) {
-      ret[wk][tankIds[0]] += sales[wk][dt][tankIds[0].toString()]
-      ret[wk][tankIds[1]] += sales[wk][dt][tankIds[1].toString()]
-    }
-  }
-
-  return ret
 }
