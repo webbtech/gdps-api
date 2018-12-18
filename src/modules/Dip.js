@@ -3,7 +3,7 @@ import { gql } from 'apollo-server'
 import { dynamoTables as dt } from '../config/constants'
 import { fetchDelivery, persistDelivery, removeDelivery } from './FuelDeliver'
 import { asyncForEach } from '../utils/utils'
-import { persistDipOS } from './DipOverShort'
+import { persistDipOS } from './DipOverShort' // eslint-disable-line
 
 export const typeDef = gql`
   extend type Mutation {
@@ -40,7 +40,9 @@ export const typeDef = gql`
 export const resolvers = {
   Query: {
     dips: (_, { date, stationID }, { db }) => fetchDips(date, stationID, db),
-    dipsRange: (_, { dateFrom, dateTo, stationID }, { db }) => fetchDipsRange(dateFrom, dateTo, stationID, db),
+    dipsRange: (
+      _, { dateFrom, dateTo, stationID }, { db }
+    ) => fetchDipsRange(dateFrom, dateTo, stationID, db),
   },
   Dip: {
     fuelDelivery: ({ date, stationTankID }, args, { db }) => fetchDelivery(date, stationTankID, db),
@@ -159,6 +161,7 @@ const persistDips = async (input, db) => {
       }
       await removeDelivery(item, db)
     }
+    return true
   })
 
   // Now create the dip os record

@@ -6,6 +6,7 @@ module.exports = {
   rules: {
     semi: ["error", "never"],
     "comma-dangle": ["warn", "always-multiline"],
-    "import/no-extraneous-dependencies": ["error", {"devDependencies": true}]
+    "import/no-extraneous-dependencies": ["error", {"devDependencies": true}],
+    "no-use-before-define": ["error", { "variables": false }],
   }
 };

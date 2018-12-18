@@ -2,8 +2,7 @@ import GraphQLJSON from 'graphql-type-json'
 import { gql } from 'apollo-server'
 import moment from 'moment'
 
-import { dynamoTables as dt } from '../config/constants'
-import { propaneTankIDs } from '../config/constants'
+import { dynamoTables as dt, propaneTankIDs } from '../config/constants'
 import { setMonths } from '../utils/utils'
 
 export const typeDef = gql`
@@ -61,7 +60,7 @@ const fetchPropaneSales = async (year, db) => {
     ProjectionExpression: '#dte, TankID, Sales',
   }
 
-  return await db.query(params).promise().then((result) => {
+  return db.query(params).promise().then((result) => {
     // Aggregate results into months and tank ids
     const sales = {}
     months.forEach((m) => {
@@ -113,7 +112,7 @@ const fetchPropaneAnnualDeliveries = async (year, db) => {
     ProjectionExpression: '#dte, Litres',
   }
 
-  return await db.query(params).promise().then((result) => {
+  return db.query(params).promise().then((result) => {
     const res = {}
     let total = 0
     months.forEach((m) => {
