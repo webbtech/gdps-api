@@ -3,7 +3,7 @@ import { gql } from 'apollo-server'
 import { dynamoTables as dt } from '../config/constants'
 import { fetchDelivery, persistDelivery, removeDelivery } from './FuelDeliver'
 import { asyncForEach } from '../utils/utils'
-import { persistDipOS } from './DipOverShort' // eslint-disable-line
+import { persistDipOS } from './DipOverShort'
 
 export const typeDef = gql`
   extend type Mutation {

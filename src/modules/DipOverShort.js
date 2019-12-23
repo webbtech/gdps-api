@@ -29,7 +29,11 @@ export const typeDef = gql`
 export const resolvers = {
   Query: {
     dipOverShort: (_, { date, stationID }, { db }) => fetchOS(date, stationID, db),
-    dipOverShortRange: (_, { dateFrom, dateTo, stationID }, { db }) => fetchOSRange(dateFrom, dateTo, stationID, db),
+    dipOverShortRange: (
+      _,
+      { dateFrom, dateTo, stationID },
+      { db }
+    ) => fetchOSRange(dateFrom, dateTo, stationID, db),
   },
   Mutation: {
     createDipOS: (_, { input }, { db }) => persistDipOS(input, db),
