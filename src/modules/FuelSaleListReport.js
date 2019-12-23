@@ -74,7 +74,6 @@ const fetchFuelSalesAll = async (date, db, docClient) => {
     return null
   }
 
-  // console.log('periodSales: ', periodSales[0].periods)
   const periodTotals = setPeriodTotals(periodSales, weekRange)
   const totalsByFuel = setTotalsByFuel(periodTotals)
   const periodHeader = setWeekPeriods(weekRange)

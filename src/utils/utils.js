@@ -1,4 +1,7 @@
-import moment from 'moment'
+import Moment from 'moment'
+import { extendMoment } from 'moment-range'
+
+const moment = extendMoment(Moment)
 
 /**
  * Returns number from moment
@@ -43,21 +46,23 @@ export function numberRange(start, end) {
 }
 
 export function wkRange(date) {
-  const endWk = moment(date).endOf('month').week()
-  const endYr = moment(date).endOf('month').endOf('week').year()
-  const endWkDte = Number(`${endYr}${endWk}`)
+  // Get the first and last day of the month
+  const firstDay = moment(date).startOf('month')
+  const endDay = moment(date).endOf('month')
 
-  const wks = []
-  let wk
-  let i = 0
-  do {
-    const dte = moment(date).startOf('month').add(i, 'w')
-    wk = Number(`${dte.year()}${dte.week()}`)
-    wks.push(wk)
-    i += 1
-  } while (wk !== endWkDte)
+  const dayRange = moment.range(firstDay, endDay)
+  const dayRangeAr = Array.from(dayRange.by('day'))
+  const weeks = []
 
-  return wks
+  // loop through each date and get the unique week based on the actual year
+  dayRangeAr.forEach((d) => {
+    const yr = d.endOf('w').year()
+    const yrWk = Number(`${yr}${d.week()}`)
+    if (!weeks.includes(yrWk)) {
+      weeks.push(Number(`${d.year()}${d.week()}`))
+    }
+  })
+  return weeks
 }
 
 /**
