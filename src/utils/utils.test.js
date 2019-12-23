@@ -58,9 +58,14 @@ describe('wkRange', () => {
 
 describe('yearWeekStartEnd', () => {
   it('return start and end week dates', () => {
-    const ret = [201848, 20191]
-    const date = '2018-12-01'
-    const se = U.yearWeekStartEnd(date)
+    let ret = [201848, 20191]
+    let date = '2018-12-01'
+    let se = U.yearWeekStartEnd(date)
+    expect(se).toEqual(ret)
+
+    ret = [20201, 20205]
+    date = '2020-01-01'
+    se = U.yearWeekStartEnd(date)
     expect(se).toEqual(ret)
   })
 })
@@ -95,6 +100,11 @@ describe('monthWeekRanges', () => {
     expect(ranges).toHaveLength(5)
     expect(ranges[0].startDate).toEqual(20191201)
     expect(ranges[ranges.length - 1].endDate).toEqual(20200104)
+
+    date = '2020-01-01'
+    ranges = U.monthWeekRanges(date)
+    expect(ranges[0].startDate).toEqual(20191229)
+    expect(ranges[0].endDate).toEqual(20200104)
   })
 })
 
