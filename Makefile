@@ -7,7 +7,7 @@ deploy: buildapp awsPackage awsDeploy
 buildapp:
 	@rm -fr build/* && \
 	yarn run build && \
-	cp ./src/auth/jwk.json build/auth/ && \
+	cp ./src/auth/jwks.json build/auth/ && \
 	cp package.json build/ && \
 	cd ./build && \
 	rm server.dev.js && \

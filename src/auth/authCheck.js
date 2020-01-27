@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 import jwkToPem from 'jwk-to-pem'
-import jwtSet from './jwk.json'
+import jwtSet from './jwks.json'
 import { COGNITO_USER_POOL_ID as userPoolID } from '../config/constants'
 
 const ALG = 'RS256'
