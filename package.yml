@@ -1,0 +1,155 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Gales Dips API Lambda Server
+Parameters:
+  ParamCertificateArn:
+    Description: Domain Certificate Arn
+    Type: String
+  ParamCustomDomainName:
+    Description: Custom Domain Name
+    Type: String
+  ParamHostedZoneId:
+    Description: Hosted Zone ID
+    Type: String
+  ParamProjectName:
+    Type: String
+    Description: Name of the API - used to generate unique names for resources
+    MinLength: 3
+    MaxLength: 20
+    AllowedPattern: ^[a-zA-Z][a-zA-Z0-9_-]*$
+  ParamAccountId:
+    Type: String
+    Description: Account ID
+  ParamENV:
+    Description: Stage environment
+    Type: String
+Resources:
+  Api:
+    Type: AWS::Serverless::Api
+    DeletionPolicy: Delete
+    DependsOn: Lambda
+    Properties:
+      EndpointConfiguration: REGIONAL
+      StageName: Prod
+      GatewayResponses:
+        UNAUTHORIZED:
+          StatusCode: 401
+          ResponseTemplates:
+            application/json: '{ "message": $context.error.messageString }'
+          ResponseParameters:
+            Headers:
+              Access-Control-Expose-Headers: '''WWW-Authenticate'''
+              Access-Control-Allow-Origin: '''*'''
+              Access-Control-Allow-Headers: '''*'''
+      Domain:
+        DomainName:
+          Ref: ParamCustomDomainName
+        CertificateArn:
+          Ref: ParamCertificateArn
+        EndpointConfiguration: REGIONAL
+        Route53:
+          HostedZoneId:
+            Ref: ParamHostedZoneId
+          EvaluateTargetHealth: true
+          DistributionDomainName:
+            Value:
+              Fn::Sub: https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/
+  Lambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: server.graphqlHandler
+      Runtime: nodejs12.x
+      CodeUri: s3://gdps-lambdas/api-stage/63b2beeae834874a57d1c898d2e75a56
+      Role:
+        Fn::GetAtt:
+        - LambdaRole
+        - Arn
+      Timeout: 10
+      MemorySize: 512
+      Tracing: Active
+      Environment:
+        Variables:
+          NODE_ENV:
+            Ref: ParamENV
+          Stage:
+            Ref: ParamENV
+      Events:
+        AnyRequest:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: Api
+            Path: /graphql
+            Method: ANY
+      Tags:
+        BillTo: Gales
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub: ${ParamProjectName}-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+      Policies:
+      - PolicyName: FunctionLogAccess
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Effect: Allow
+            Resource: '*'
+      - PolicyName: FunctionDynamoDBAccess
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Action:
+            - dynamodb:DeleteItem
+            - dynamodb:DescribeStream
+            - dynamodb:GetItem
+            - dynamodb:GetRecords
+            - dynamodb:GetShardIterator
+            - dynamodb:ListStreams
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:Query
+            - dynamodb:Scan
+            Effect: Allow
+            Resource: arn:aws:dynamodb:ca-central-1:407205661819:table/GDS_*
+      - PolicyName: FunctionXRayAccess
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Action:
+            - xray:PutTraceSegments
+            - xray:PutTelemetryRecords
+            Effect: Allow
+            Resource: '*'
+Outputs:
+  ApiId:
+    Description: API ID
+    Value:
+      Ref: Api
+  ApiUrl:
+    Description: API endpoint URL for Prod environment
+    Value:
+      Fn::Sub: https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod/
+  LambdaARN:
+    Description: The Lambda Arn
+    Value:
+      Fn::GetAtt:
+      - Lambda
+      - Arn
+  DomainInvokeURL:
+    Description: Domain Invoke URL
+    Value:
+      Fn::Sub: https://${ParamCustomDomainName}

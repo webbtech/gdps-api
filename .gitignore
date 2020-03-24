@@ -40,10 +40,10 @@ jspm_packages/
 .yarn-integrity
 
 # dotenv environment variables file
-.env
+.env-*
 
 scratch
 
-packaged-tpl.yaml
+package.yml
 
 docs/
