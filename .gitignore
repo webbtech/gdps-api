@@ -43,8 +43,7 @@ jspm_packages/
 .env
 .env-*
 
+# misc
 scratch
-
 package.yml
-
 docs/
