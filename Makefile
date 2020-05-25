@@ -20,7 +20,6 @@ buildapp:
 	cd ./build && \
 	rm server.dev.js && \
 	yarn install --prod
-	# find . -mtime +10950 -print -exec touch {} \;
 
 compileapp:
 	yarn run build
