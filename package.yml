@@ -38,9 +38,9 @@ Resources:
             application/json: '{ "message": $context.error.messageString }'
           ResponseParameters:
             Headers:
-              Access-Control-Expose-Headers: '''WWW-Authenticate'''
-              Access-Control-Allow-Origin: '''*'''
-              Access-Control-Allow-Headers: '''*'''
+              Access-Control-Expose-Headers: "'WWW-Authenticate'"
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'*'"
       Domain:
         DomainName:
           Ref: ParamCustomDomainName
@@ -59,7 +59,7 @@ Resources:
     Properties:
       Handler: server.graphqlHandler
       Runtime: nodejs12.x
-      CodeUri: s3://gdps-lambdas/api-stage/63b2beeae834874a57d1c898d2e75a56
+      CodeUri: s3://gdps-lambdas/api-prod/e430b6eed0debb1503199957def5d5b9
       Role:
         Fn::GetAtt:
         - LambdaRole

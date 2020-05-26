@@ -3,6 +3,8 @@
 # example:
 # for stage run: ENV=stage make
 # for production run: ENV=prod make
+# NOTE: currently having separate .env-* files seems redundant, here none the less
+
 include .env-$(ENV)
 
 default: check_env compileapp awspackage awsdeploy
@@ -44,17 +46,17 @@ awspackage:
 
 awsdeploy:
 	@aws cloudformation deploy \
-   --template-file ${FILE_PACKAGE} \
-   --stack-name $(AWS_STACK_NAME) \
-   --capabilities CAPABILITY_NAMED_IAM \
-   --profile $(AWS_PROFILE) \
-	 --parameter-overrides \
-			ParamCertificateArn=$(CERTIFICATE_ARN) \
-			ParamCustomDomainName=$(CUSTOM_DOMAIN_NAME) \
-			ParamENV=$(ENV) \
-			ParamHostedZoneId=$(HOSTED_ZONE_ID) \
-	 		ParamAccountId=$(AWS_ACCOUNT_ID) \
-	 	  ParamProjectName=$(AWS_STACK_NAME)
+   	--template-file ${FILE_PACKAGE} \
+   	--stack-name $(AWS_STACK_NAME) \
+   	--capabilities CAPABILITY_NAMED_IAM \
+   	--profile $(AWS_PROFILE) \
+	--parameter-overrides \
+		ParamCertificateArn=$(CERTIFICATE_ARN) \
+		ParamCustomDomainName=$(CUSTOM_DOMAIN_NAME) \
+		ParamENV=$(ENV) \
+		ParamHostedZoneId=$(HOSTED_ZONE_ID) \
+	 	ParamAccountId=$(AWS_ACCOUNT_ID) \
+	 	ParamProjectName=$(AWS_STACK_NAME)
 
 describe:
 	@aws cloudformation describe-stacks \
