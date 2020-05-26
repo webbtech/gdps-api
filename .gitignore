@@ -41,9 +41,9 @@ jspm_packages/
 
 # dotenv environment variables file
 .env
+.env-*
 
+# misc
 scratch
-
-packaged-tpl.yaml
-
+package.yml
 docs/
