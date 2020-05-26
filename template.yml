@@ -1,0 +1,179 @@
+AWSTemplateFormatVersion : '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: Gales Dips API Lambda Server
+
+Parameters:
+  ParamCertificateArn:
+    Description: Domain Certificate Arn
+    Type: String
+  ParamCustomDomainName:
+    Description: Custom Domain Name
+    Type: String
+  ParamHostedZoneId:
+    Description: Hosted Zone ID
+    Type: String
+  ParamProjectName:
+    Type: String
+    Description: Name of the API - used to generate unique names for resources
+    MinLength: 3
+    MaxLength: 20
+    AllowedPattern: '^[a-zA-Z][a-zA-Z0-9_-]*$'
+  ParamAccountId:
+    Type: String
+    Description: Account ID
+  ParamENV:
+    Description: Stage environment
+    Type: String
+
+Resources:
+  Api:
+    Type: AWS::Serverless::Api
+    DeletionPolicy: Delete
+    DependsOn: Lambda
+    Properties:
+      EndpointConfiguration: REGIONAL
+      StageName: Prod
+      # see link for (apparently) undocumented Auth properties
+      # link: https://awsdevelopers.slack.com/archives/CA18Q1ZCM/p1560266323067200
+      # Oddly, this property does not work with sam local
+      # Auth:
+      #   DefaultAuthorizer: LambdaTokenAuthorizer
+      #   Authorizers:
+      #     LambdaTokenAuthorizer:
+      #       FunctionArn: !GetAtt AuthLambda.Arn
+      #       Identity:
+      #         # ReauthorizeEvery: 0 # for testing
+      #         ReauthorizeEvery: 300
+
+      # Documentation for below: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#gateway-response-object
+      GatewayResponses:
+        UNAUTHORIZED:
+          StatusCode: 401
+          ResponseTemplates:
+            "application/json": '{ "message": $context.error.messageString }'
+          ResponseParameters:
+            Headers:
+              Access-Control-Expose-Headers: "'WWW-Authenticate'"
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'*'"
+
+      # Docs for this at: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#domain-configuration-object
+      Domain:
+        DomainName: !Ref ParamCustomDomainName
+        CertificateArn: !Ref ParamCertificateArn
+        EndpointConfiguration: "REGIONAL"
+        Route53:
+          HostedZoneId: !Ref ParamHostedZoneId
+          EvaluateTargetHealth: true
+          DistributionDomainName:
+            Value: !Sub "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+
+  Lambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: server.graphqlHandler
+      Runtime: nodejs12.x
+      CodeUri: build/
+      Role: !GetAtt LambdaRole.Arn
+      Timeout: 10
+      MemorySize: 512
+      Tracing: Active
+      Environment:
+        Variables:
+          # TODO: ensure these are required
+          NODE_ENV: !Ref ParamENV
+          Stage: !Ref ParamENV
+      Events:
+        AnyRequest:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /graphql
+            # Path: /
+            Method: ANY
+      Tags:
+        BillTo: 'Gales'
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ParamProjectName}-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+      # Path: "/"
+      Policies:
+      - PolicyName: FunctionLogAccess
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Effect: Allow
+            Resource: '*'
+      - PolicyName: FunctionDynamoDBAccess
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Action:
+            - dynamodb:DeleteItem
+            - dynamodb:DescribeStream
+            - dynamodb:GetItem
+            - dynamodb:GetRecords
+            - dynamodb:GetShardIterator
+            - dynamodb:ListStreams
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:Query
+            - dynamodb:Scan
+            Effect: Allow
+            Resource: "arn:aws:dynamodb:ca-central-1:407205661819:table/GDS_*"
+      - PolicyName: FunctionXRayAccess
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Action:
+            - xray:PutTraceSegments
+            - xray:PutTelemetryRecords
+            Effect: Allow
+            Resource: '*'
+
+Outputs:
+  ApiId:
+    Description: "API ID"
+    Value: !Ref Api
+  ApiUrl:
+    Description: "API endpoint URL for Prod environment"
+    Value: !Sub 'https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
+  LambdaARN:
+    Description: The Lambda Arn
+    Value: !GetAtt Lambda.Arn
+  # AuthLambdaARN:
+  #   Description: The Authorization Lambda Arn
+  #   Value: !GetAtt AuthLambda.Arn
+  DomainInvokeURL:
+    Description: "Domain Invoke URL"
+    Value: !Sub "https://${ParamCustomDomainName}"
+
+  # GraphQLInspector:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Handler: ./src/graphql.graphiqlHandler
+  #     Runtime: nodejs8.10
+  #     CodeUri: '.'
+  #     Events:
+  #       GetRequest:
+  #         Type: Api
+  #         Properties:
+  #           Path: /graphiql
+  #           Method: get
+  
