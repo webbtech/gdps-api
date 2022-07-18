@@ -44,6 +44,7 @@ jspm_packages/
 .env-*
 
 # misc
+.vscode/
 scratch
 package.yml
 docs/

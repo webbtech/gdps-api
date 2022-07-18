@@ -15,7 +15,7 @@ const AuthorizationError = createError('AuthorizationError', {
 AWS.config.update(config)
 
 // Local development context without authentication
-const context = async () => ({
+const context = async () => ({ // eslint-disable-line
   db: await new AWS.DynamoDB(),
   docClient: await new AWS.DynamoDB.DocumentClient(),
 })
@@ -30,7 +30,7 @@ const contextAuth = async ({ req }) => { // eslint-disable-line
     throw new AuthorizationError()
   }
   return {
-    db: await new AWS.DynamoDB(),
+    db: new AWS.DynamoDB(),
     user,
   }
 }
