@@ -3,7 +3,6 @@ import { ApolloServer } from 'apollo-server-lambda'
 import AWS from 'aws-sdk'
 import { createError } from 'apollo-errors'
 
-import authCheck from './auth/authCheck'
 import graphql from './graphql'
 import { config } from './config/dynamo'
 
@@ -18,17 +17,16 @@ AWS.config.update(config)
 const context = async ({ event }) => {
   const db = await new AWS.DynamoDB()
   const docClient = await new AWS.DynamoDB.DocumentClient()
-  let user
-  try {
-    user = await authCheck(event.headers.Authorization)
-  } catch (err) {
-    console.error(err) // eslint-disable-line
+
+  if (!event.headers.Authorization) {
     throw new AuthorizationError()
   }
+  const token = event.headers.Authorization
+
   return {
     db,
     docClient,
-    user,
+    token,
   }
 }
 

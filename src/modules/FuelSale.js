@@ -218,13 +218,13 @@ const fetchFuelSaleRangeSumByStation = async (dateFrom, dateTo, stationID, db, d
   return ret
 }
 
-const createFuelSaleDwnld = (date, stationID, user) => {
+const createFuelSaleDwnld = (date, stationID, token) => {
   const retDate = Number(moment(date).format('YYYYMMDD'))
 
   const options = {
     uri: lambdaFSURI,
     headers: {
-      Authorization: `${user.accessToken}`,
+      Authorization: token,
     },
     method: 'POST',
     json: {
@@ -240,11 +240,11 @@ const createFuelSaleDwnld = (date, stationID, user) => {
   }))
 }
 
-const createFuelSaleSummaryDwnld = (dateFrom, dateTo, user) => {
+const createFuelSaleSummaryDwnld = (dateFrom, dateTo, token) => {
   const options = {
     uri: lambdaFSSumURI,
     headers: {
-      Authorization: `${user.accessToken}`,
+      Authorization: token,
     },
     method: 'POST',
     json: {
@@ -311,10 +311,10 @@ const fetchFuelSaleRangeSummary = async (dteFrom, dteTo, db, docClient) => {
 
 export const resolvers = {
   Mutation: {
-    fuelSaleDownload: (_, { date, stationID }, { user }) =>
-      createFuelSaleDwnld(date, stationID, user), // eslint-disable-line
-    fuelSaleRangeSummaryDownload: (_, { dateFrom, dateTo }, { user }) =>
-      createFuelSaleSummaryDwnld(dateFrom, dateTo, user), // eslint-disable-line
+    fuelSaleDownload: (_, { date, stationID }, { token }) =>
+      createFuelSaleDwnld(date, stationID, token), // eslint-disable-line
+    fuelSaleRangeSummaryDownload: (_, { dateFrom, dateTo }, { token }) =>
+      createFuelSaleSummaryDwnld(dateFrom, dateTo, token), // eslint-disable-line
   },
   Query: {
     fuelSale: (_, { date, stationID }, { db }) => fetchFuelSale(date, stationID, db),
