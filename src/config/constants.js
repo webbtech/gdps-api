@@ -33,7 +33,7 @@ export const FUELSALE_EXPORT_LAMBDA = 'https://fs-import-prod.gdps.pfapi.io/expo
 export const FUELSALE_REPORT_LAMBDA = 'https://station-dnld-prod.gdps.pfapi.io/fuelsale'
 
 // Fuel Sale Summary Report
-export const FUELSALE_SUM_REPORT_LAMBDA = 'https://fs-sum-dwnld.gdps.pfapi.io/report'
+export const FUELSALE_SUM_REPORT_LAMBDA = 'https://fuelsale-summary-dnld-prod.gdps.pfapi.io/report'
 
 // Propane Report
-export const PROPANE_REPORT_LAMBDA = 'https://propane-dwnld.gdps.pfapi.io/propane'
+export const PROPANE_REPORT_LAMBDA = 'https://propane-dnld-prod.gdps.pfapi.io/propane'
