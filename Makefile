@@ -1,23 +1,21 @@
-# if the KEY environment variable is not set to either stage or prod, makefile will fail
+# The KEY environment variable must be set to either stage or prod
 # KEY is confirmed below in the check_env directive
 # example:
-# for stage run: ENV=stage make
-# for production run: ENV=prod make
-# NOTE: currently having separate .env-* files seems redundant, here none the less
+# stage: ENV=stage make
+# production: ENV=prod make
 
-include .env-$(ENV)
+include .env
 
 default: check_env compileapp awspackage awsdeploy
 
 deploy: check_env buildapp awspackage awsdeploy
 
 check_env:
-	@echo -n "Your environment file is .env-$(ENV)? [y/N] " && read ans && [ $${ans:-N} = y ]
+	@echo -n "Your environment is $(ENV)? [y/N] " && read ans && [ $${ans:-N} = y ]
 
 buildapp:
 	@rm -fr build/* && \
 	yarn run build && \
-	cp ./src/auth/jwks.json build/auth/ && \
 	cp package.json build/ && \
 	cd ./build && \
 	rm server.dev.js && \
@@ -56,7 +54,8 @@ awsdeploy:
 		ParamENV=$(ENV) \
 		ParamHostedZoneId=$(HOSTED_ZONE_ID) \
 	 	ParamAccountId=$(AWS_ACCOUNT_ID) \
-	 	ParamProjectName=$(AWS_STACK_NAME)
+	 	ParamProjectName=$(AWS_STACK_NAME) \
+		ParamUserPoolArn=$(USER_POOL_ARN)
 
 describe:
 	@aws cloudformation describe-stacks \
