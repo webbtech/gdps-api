@@ -6,8 +6,7 @@ import { extendMoment } from 'moment-range'
 import Moment from 'moment'
 
 import { momentToNumber } from '../utils/utils'
-import { dynamoTables as dt } from '../config/constants'
-import { PROPANE_REPORT_LAMBDA as lambdaURI } from '../config/constants'
+import { dynamoTables as dt, PROPANE_REPORT_LAMBDA as lambdaURI } from '../config/constants'
 
 const moment = extendMoment(Moment)
 
@@ -40,7 +39,7 @@ type PropaneDwnld {
 
 export const resolvers = {
   Mutation: {
-    propaneSignedURL: (_, { date }, { user }) => createSignedURL(date, user),
+    propaneSignedURL: (_, { date }, { token }) => createSignedURL(date, token),
   },
   Query: {
     propaneReportDwnld: (_, { date }, { docClient }) => compilePropaneReportDwnld(date, docClient),
@@ -154,13 +153,13 @@ const fetchDeliveries = async (startDay, endDay, docClient) => {
   return result
 }
 
-const createSignedURL = async (date, user) => {
+const createSignedURL = async (date, token) => {
   const retDate = Number(moment(date).format('YYYYMMDD'))
 
   const options = {
     uri: lambdaURI,
     headers: {
-      Authorization: `${user.accessToken}`,
+      Authorization: token,
     },
     method: 'POST',
     json: {

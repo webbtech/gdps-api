@@ -40,11 +40,10 @@ jspm_packages/
 .yarn-integrity
 
 # dotenv environment variables file
-.env
-.env-*
+.env*
 
 # misc
 .vscode/
 scratch
-package.yml
+package*.yml
 docs/

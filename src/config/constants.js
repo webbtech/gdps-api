@@ -25,14 +25,15 @@ export const FUEL_TYPE_LIST = ['NL', 'SNL', 'DSL', 'CDSL']
 export const COGNITO_USER_POOL_ID = 'https://cognito-idp.ca-central-1.amazonaws.com/ca-central-1_lolwfYIAr'
 
 // lambda used when downloading fuel sales data from Sales app in "Import Sales Data"
-export const FUELSALE_EXPORT_LAMBDA = 'https://fs-export.gsales.pfapi.io/export'
+// export const FUELSALE_EXPORT_LAMBDA = 'https://fs-export.gsales.pfapi.io/export'
+export const FUELSALE_EXPORT_LAMBDA = 'https://fs-import-prod.gdps.pfapi.io/export' // NOTE: if stage is enabled, we'll need to create a function here
 
 // ========== Various Report Lambdas ============================================================
-// report: Station Report
-export const FUELSALE_REPORT_LAMBDA = 'https://fs-dwnld.gdps.pfapi.io/fuelsale'
+// Station Report
+export const FUELSALE_REPORT_LAMBDA = 'https://station-dnld-prod.gdps.pfapi.io/fuelsale'
 
-// report: Fuel Sale Summary Report
-export const FUELSALE_SUM_REPORT_LAMBDA = 'https://fs-sum-dwnld.gdps.pfapi.io/report'
+// Fuel Sale Summary Report
+export const FUELSALE_SUM_REPORT_LAMBDA = 'https://fuelsale-summary-dnld-prod.gdps.pfapi.io/report'
 
-// report: Propane Report
-export const PROPANE_REPORT_LAMBDA = 'https://propane-dwnld.gdps.pfapi.io/propane'
+// Propane Report
+export const PROPANE_REPORT_LAMBDA = 'https://propane-dnld-prod.gdps.pfapi.io/propane'

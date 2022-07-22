@@ -4,6 +4,10 @@ Transform: AWS::Serverless-2016-10-31
 Description: Gales Dips API Lambda Server
 
 Parameters:
+  ParamBillTo:
+    Description: Required. Value of Tag key BillTo
+    Type: String
+    Default: "Gales"
   ParamCertificateArn:
     Description: Domain Certificate Arn
     Type: String
@@ -16,14 +20,17 @@ Parameters:
   ParamProjectName:
     Type: String
     Description: Name of the API - used to generate unique names for resources
-    MinLength: 3
-    MaxLength: 20
+    MinLength: "3"
+    MaxLength: "20"
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9_-]*$'
   ParamAccountId:
     Type: String
     Description: Account ID
   ParamENV:
     Description: Stage environment
+    Type: String
+  ParamUserPoolArn:
+    Description: Cognito User Pool Arn
     Type: String
 
 Resources:
@@ -32,16 +39,21 @@ Resources:
     DeletionPolicy: Delete
     DependsOn: Lambda
     Properties:
-      EndpointConfiguration: REGIONAL
+      EndpointConfiguration: 
+        Type: REGIONAL
       StageName: Prod
+      Cors: # NOTE: these could be tightened up some
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'" # TODO: add an origin here
       # see link for (apparently) undocumented Auth properties
       # link: https://awsdevelopers.slack.com/archives/CA18Q1ZCM/p1560266323067200
       # Oddly, this property does not work with sam local
-      # Auth:
-      #   DefaultAuthorizer: LambdaTokenAuthorizer
-      #   Authorizers:
-      #     LambdaTokenAuthorizer:
-      #       FunctionArn: !GetAtt AuthLambda.Arn
+      Auth:
+        DefaultAuthorizer: LambdaTokenAuthorizer
+        Authorizers:
+          LambdaTokenAuthorizer:
+            UserPoolArn: !Ref ParamUserPoolArn
       #       Identity:
       #         # ReauthorizeEvery: 0 # for testing
       #         ReauthorizeEvery: 300
@@ -90,10 +102,17 @@ Resources:
           Properties:
             RestApiId: !Ref Api
             Path: /graphql
-            # Path: /
             Method: ANY
+        Options:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /graphql
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
       Tags:
-        BillTo: 'Gales'
+        BillTo: !Ref ParamBillTo
 
   LambdaRole:
     Type: AWS::IAM::Role
@@ -108,7 +127,6 @@ Resources:
           Principal:
             Service:
             - lambda.amazonaws.com
-      # Path: "/"
       Policies:
       - PolicyName: FunctionLogAccess
         PolicyDocument:
@@ -157,9 +175,6 @@ Outputs:
   LambdaARN:
     Description: The Lambda Arn
     Value: !GetAtt Lambda.Arn
-  # AuthLambdaARN:
-  #   Description: The Authorization Lambda Arn
-  #   Value: !GetAtt AuthLambda.Arn
   DomainInvokeURL:
     Description: "Domain Invoke URL"
     Value: !Sub "https://${ParamCustomDomainName}"

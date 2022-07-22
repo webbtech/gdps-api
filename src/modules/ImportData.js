@@ -1,10 +1,8 @@
 import { gql } from 'apollo-server'
 import request from 'request-promise-native'
 import moment from 'moment'
-import { dynamoTables as dt } from '../config/constants'
 
-import { FUELSALE_EXPORT_LAMBDA as lambdaURI } from '../config/constants'
-// const LambdaFuncPath = 'http://127.0.0.1:3000/export'
+import { FUELSALE_EXPORT_LAMBDA as lambdaURI, dynamoTables as dt } from '../config/constants'
 
 const validImportTypes = ['fuel', 'propane']
 
@@ -26,7 +24,7 @@ type ImportData {
 
 export const resolvers = {
   Mutation: {
-    importData: (_, { dateStart, dateEnd, importType }, { user }) => {
+    importData: (_, { dateStart, dateEnd, importType }, { token }) => {
       const dates = validateDates(dateStart, dateEnd)
       if (!dates) {
         return null
@@ -34,7 +32,7 @@ export const resolvers = {
       if (!validateType(importType)) {
         return null
       }
-      return importFuel(dates, importType, user)
+      return importFuel(dates, importType, token)
     },
   },
   Query: {
@@ -42,11 +40,11 @@ export const resolvers = {
   },
 }
 
-const importFuel = (dates, importType, user) => {
+const importFuel = (dates, importType, token) => {
   const options = {
     uri: lambdaURI,
     headers: {
-      Authorization: `${user.accessToken}`,
+      Authorization: `${token}`,
     },
     method: 'POST',
     json: {
